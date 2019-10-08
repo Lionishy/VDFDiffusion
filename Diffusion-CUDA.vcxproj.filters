@@ -8,4 +8,9 @@
       <UniqueIdentifier>{a183c5cb-e098-447f-ad92-ab95968a1a2a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ThomsonSolver.cuh">
+      <Filter>Math</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
