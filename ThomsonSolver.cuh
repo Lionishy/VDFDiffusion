@@ -6,9 +6,9 @@
 
 namespace iki { namespace math { namespace device { 
 	template <typename T>
-	__device__ void thomson_sweep(T const *a, T const *b, T *c, T *d, T *x, size_t size) {
+	__device__ void thomson_sweep(T *a, T *b, T *c, T *d, T *x, size_t size) {
 		for (size_t idx = 1; idx != size; ++idx) {
-			T w = a[idx] / b[idx];
+			T w = a[idx] / b[idx-1];
 			b[idx] = b[idx] - w * c[idx - 1];
 			d[idx] = d[idx] - w * d[idx - 1];
 		}

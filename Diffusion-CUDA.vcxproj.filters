@@ -13,4 +13,7 @@
       <Filter>Math</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="ThomsonSolverTest.cu" />
+  </ItemGroup>
 </Project>
