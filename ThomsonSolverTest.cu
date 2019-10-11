@@ -4,23 +4,23 @@
 #include <cuda_runtime.h>
 
 template <typename T>
-__device__ void calculate_tridiagonal_matrix(T const *f_dev, T const *d_dev, T *tsa_dev, T *tsb_dev, T *tsc_dev, T *tsd_dev, size_t size, T dt, T dx) {
+__device__ void calculate_tridiagonal_matrix(T const *f_dev, T const *d_dev, T *tsa_dev, T *tsb_dev, T *tsc_dev, T *tsd_dev, size_t size, T r) {
 	tsa_dev[0] = T(0); 
-	tsb_dev[0] = d_dev[0] * dt / (2 * dx * dx) + T(1); 
-	tsc_dev[0] = -d_dev[1] * dt / (2 * dx * dx);
-	tsd_dev[0] = f_dev[0] + dt / (2 * dx * dx) * (-d_dev[0] * f_dev[0] + d_dev[1] * f_dev[1]);
+	tsb_dev[0] = d_dev[0] * r / 2 + T(1); 
+	tsc_dev[0] = -d_dev[1] * r / 2;
+	tsd_dev[0] = f_dev[0] + r / 2 * (-d_dev[0] * f_dev[0] + d_dev[1] * f_dev[1]);
 
 	for (size_t idx = 1; idx != size-2; ++idx) {
-		tsa_dev[idx] = -dt / (2*dx*dx) * d_dev[idx - 1];
-		tsb_dev[idx] = dt / (2*dx*dx) * (d_dev[idx - 1] + d_dev[idx]) + T(1);
-		tsc_dev[idx] = -dt / (2*dx*dx) * d_dev[idx];
-		tsd_dev[idx] = f_dev[idx] + dt / (2*dx*dx) * (f_dev[idx-1]*d_dev[idx-1] - f_dev[idx]*(d_dev[idx-1]+d_dev[idx]) + f_dev[idx+1]*d_dev[idx]);
+		tsa_dev[idx] = -r / 2 * d_dev[idx - 1];
+		tsb_dev[idx] = r / 2 * (d_dev[idx - 1] + d_dev[idx]) + T(1);
+		tsc_dev[idx] = -r / 2 * d_dev[idx];
+		tsd_dev[idx] = f_dev[idx] + r / 2 * (f_dev[idx-1]*d_dev[idx-1] - f_dev[idx]*(d_dev[idx-1]+d_dev[idx]) + f_dev[idx+1]*d_dev[idx]);
 	}
 
-	tsa_dev[size - 2] = -dt / (2 * dx * dx) * d_dev[size - 3];
-	tsb_dev[size - 2] = dt / (2 * dx * dx) * (d_dev[size - 3] + d_dev[size-2]) + T(1);
+	tsa_dev[size - 2] = -r / 2 * d_dev[size - 3];
+	tsb_dev[size - 2] = r / 2 * (d_dev[size - 3] + d_dev[size-2]) + T(1);
 	tsc_dev[size - 2] = T(0);
-	tsd_dev[size - 2] = f_dev[size - 2] + dt / (2 * dx * dx) * (f_dev[size - 3] * d_dev[size - 3] - f_dev[size - 2] * (d_dev[size - 3] + d_dev[size - 2]) + 2 * f_dev[size - 1] * d_dev[size - 2]);
+	tsd_dev[size - 2] = f_dev[size - 2] + r / 2 * (f_dev[size - 3] * d_dev[size - 3] - f_dev[size - 2] * (d_dev[size - 3] + d_dev[size - 2]) + 2 * f_dev[size - 1] * d_dev[size - 2]);
 }
 
 
