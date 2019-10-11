@@ -3,6 +3,26 @@
 
 #include <cuda_runtime.h>
 
+template <typename T>
+__device__ void calculate_tridiagonal_matrix(T const *f_dev, T const *d_dev, T *tsa_dev, T *tsb_dev, T *tsc_dev, T *tsd_dev, size_t size, T dt, T dx) {
+	tsa_dev[0] = T(0); 
+	tsb_dev[0] = d_dev[0] * dt / (2 * dx * dx) + T(1); 
+	tsc_dev[0] = -d_dev[1] * dt / (2 * dx * dx);
+	tsd_dev[0] = f_dev[0] + dt / (2 * dx * dx) * (-d_dev[0] * f_dev[0] + d_dev[1] * f_dev[1]);
+
+	for (size_t idx = 1; idx != size-2; ++idx) {
+		tsa_dev[idx] = -dt / (2*dx*dx) * d_dev[idx - 1];
+		tsb_dev[idx] = dt / (2*dx*dx) * (d_dev[idx - 1] + d_dev[idx]) + T(1);
+		tsc_dev[idx] = -dt / (2*dx*dx) * d_dev[idx];
+		tsd_dev[idx] = f_dev[idx] + dt / (2*dx*dx) * (f_dev[idx-1]*d_dev[idx-1] - f_dev[idx]*(d_dev[idx-1]+d_dev[idx]) + f_dev[idx+1]*d_dev[idx]);
+	}
+
+	tsa_dev[size - 2] = -dt / (2 * dx * dx) * d_dev[size - 3];
+	tsb_dev[size - 2] = dt / (2 * dx * dx) * (d_dev[size - 3] + d_dev[size-2]) + T(1);
+	tsc_dev[size - 2] = T(0);
+	tsd_dev[size - 2] = f_dev[size - 2] + dt / (2 * dx * dx) * (f_dev[size - 3] * d_dev[size - 3] - f_dev[size - 2] * (d_dev[size - 3] + d_dev[size - 2]) + 2 * f_dev[size - 1] * d_dev[size - 2]);
+}
+
 
 template <typename T>
 __global__ void set_test_matrix(T *mem_dev, size_t size) {
@@ -36,8 +56,48 @@ int main() {
 		goto End;
 	}
 
-	//cuda matrix data
-	size_t size = 1000;
+	{
+		size_t size = 1024;
+		//cuda function data
+		float *f_dev = NULL, *d_dev = NULL;
+		//cuda thomson sweep method data
+		float *tsa_dev = NULL, *tsb_dev = NULL, *tsc_dev = NULL, *tsd_dev = NULL, *tsx_dev = NULL;
+
+		if (cudaSuccess != cudaMalloc((void **)&f_dev, size * sizeof(float))) {
+			cout << "Can't allocate memory for function: " << size * sizeof(float) / 1024 << " Kb" << endl;
+			goto Clear;
+		}
+		if (cudaSuccess != cudaMalloc((void **)&d_dev, size * sizeof(float))) {
+			cout << "Can't allocate memory for diffusion coefficients: " << size * sizeof(float) / 1024 << " Kb" << endl;
+			goto Clear;
+		}
+		if (
+			cudaSuccess != cudaMalloc((void **)&tsa_dev, size * sizeof(float))
+			|| cudaSuccess != cudaMalloc((void **)&tsb_dev, size * sizeof(float))
+			|| cudaSuccess != cudaMalloc((void **)&tsc_dev, size * sizeof(float))
+			|| cudaSuccess != cudaMalloc((void **)&tsd_dev, size * sizeof(float))
+			|| cudaSuccess != cudaMalloc((void **)&tsx_dev, size * sizeof(float))
+		) {
+			cout << "Can't allocate memory for thomson sweep algorithm: " << 5 * size * sizeof(float) / 1024 << " Kb" << endl;
+			goto Clear;
+		}
+
+
+
+
+	Clear:;
+		if (f_dev != NULL) cudaFree(f_dev);
+		if (d_dev != NULL) cudaFree(d_dev);
+		if (tsa_dev != NULL) cudaFree(tsa_dev);
+		if (tsb_dev != NULL) cudaFree(tsb_dev);
+		if (tsc_dev != NULL) cudaFree(tsc_dev);
+		if (tsd_dev != NULL) cudaFree(tsd_dev);
+		if (tsx_dev != NULL) cudaFree(tsx_dev);
+	}
+
+	
+
+	/*size_t size = 1000;
 	double *mem_dev = NULL;// 5 * size =>  *a_dev, *b_dev, *c_dev, *d_dev, *x_dev;
 	if (cudaSuccess != cudaMalloc((void **)&mem_dev, 5 * size * sizeof(double))) {
 		cout << "Can't allocate enought device memory!" << endl;
@@ -69,9 +129,12 @@ Clear:;
 	if (NULL != mem_dev) cudaFree(mem_dev);
 	if (cudaSuccess != cudaDeviceReset()) {
 		cout << "Error in device process termination!" << endl;
+	}*/
+
+
+	if (cudaSuccess != cudaDeviceReset()) {
+		cout << "Error in device process termination!" << endl;
 	}
-
-
 End:;
 	return 0;
 }
