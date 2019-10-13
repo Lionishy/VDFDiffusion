@@ -7,8 +7,8 @@ template <typename T>
 __device__ void calculate_tridiagonal_matrix(T const *f_dev, T const *d_dev, T *tsa_dev, T *tsb_dev, T *tsc_dev, T *tsd_dev, size_t size, T r) {
 	tsa_dev[0] = T(0); 
 	tsb_dev[0] = d_dev[0] * r / 2 + T(1); 
-	tsc_dev[0] = -d_dev[1] * r / 2;
-	tsd_dev[0] = f_dev[0] + r / 2 * (-d_dev[0] * f_dev[0] + d_dev[1] * f_dev[1]);
+	tsc_dev[0] = -d_dev[0] * r / 2;
+	tsd_dev[0] = f_dev[0] + r / 2 * d_dev[0] * (f_dev[1] - f_dev[0]);
 
 	for (size_t idx = 1; idx != size-2; ++idx) {
 		tsa_dev[idx] = -r / 2 * d_dev[idx - 1];
@@ -23,28 +23,33 @@ __device__ void calculate_tridiagonal_matrix(T const *f_dev, T const *d_dev, T *
 	tsd_dev[size - 2] = f_dev[size - 2] + r / 2 * (f_dev[size - 3] * d_dev[size - 3] - f_dev[size - 2] * (d_dev[size - 3] + d_dev[size - 2]) + 2 * f_dev[size - 1] * d_dev[size - 2]);
 }
 
-
 template <typename T>
-__global__ void set_test_matrix(T *mem_dev, size_t size) {
-	T *a = mem_dev, *b = mem_dev + size, *c = mem_dev + 2 * size, *d = mem_dev + 3 * size, *x = mem_dev + 4*size;
-	a[0] = 0.f; b[0] = 3.f; c[0] = 1.f; d[0] = 4.f;
-	for (size_t idx = 1; idx != size-1; ++idx) {
-		a[idx] = 1.f; b[idx] = 2.f; c[idx] = 1.f; d[idx] = 4.f;
+__device__ void set_initial_state(T *f_dev, T *d_dev, size_t size) {
+	T grad = T(1) / (size-1);
+	f_dev[0] = T(1); f_dev[size - 1] = T(0);
+	d_dev[0] = d_dev[size - 1] = T(1);
+	for (size_t idx = 1; idx != size - 1; ++idx) {
+		f_dev[idx] = T(1) - grad * idx;
+		d_dev[idx] = T(1);
 	}
-	a[size - 1] = 1.f; b[size - 1] = 3.f; c[size - 1] = 0.f; d[size - 1] = 4.f;
-
-	for (size_t idx = 0; idx != size; ++idx)
-		x[idx] = -1.f;
 }
 
 template <typename T>
-__global__ void thomson_sweep_test_kernell(T *mem_dev, size_t size) {
-	iki::math::device::thomson_sweep(mem_dev, mem_dev + size, mem_dev + 2 * size, mem_dev + 3 * size, mem_dev + 4 * size, size);
+__global__ void thomson_sweep_test_kernell(T *f_dev, T *d_dev, T *tsa_dev, T *tsb_dev, T *tsc_dev, T *tsd_dev, T *tsx_dev, size_t size, size_t loop_count) {
+	set_initial_state(f_dev, d_dev, size);
+	for (; loop_count != 0; --loop_count) {
+		calculate_tridiagonal_matrix(f_dev, d_dev, tsa_dev, tsb_dev, tsc_dev, tsd_dev, size, T(1.));
+		iki::math::device::thomson_sweep(tsa_dev, tsb_dev, tsc_dev, tsd_dev, tsx_dev, size-1);
+		for (size_t idx = 0; idx != size - 1; ++idx)
+			f_dev[idx] = tsx_dev[idx];
+	}
 }
 
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <vector>
+#include <fstream>
 
 int main() {
 	using namespace std;
@@ -58,6 +63,8 @@ int main() {
 
 	{
 		size_t size = 1024;
+		vector<float> f_next(size);
+
 		//cuda function data
 		float *f_dev = NULL, *d_dev = NULL;
 		//cuda thomson sweep method data
@@ -82,7 +89,23 @@ int main() {
 			goto Clear;
 		}
 
-
+		thomson_sweep_test_kernell<<<1,1>>>(f_dev,d_dev,tsa_dev,tsb_dev,tsc_dev,tsd_dev,tsx_dev,size,200000u);
+		if (cudaSuccess != cudaGetLastError()) {
+			cout << "Kernell launch failed: " << cudaGetErrorString(cudaStatus) << endl;
+			goto Clear;
+		}
+		else {
+			cout << "Calculation Success!" << endl;
+			if (cudaSuccess != cudaMemcpy(f_next.data(), f_dev, size * sizeof(float), cudaMemcpyDeviceToHost)) {
+				cout << "Memory copy device->host failed!" << endl;
+			}
+			else {
+				ofstream ascii_out("./data/f.txt");
+				for (auto f : f_next) {
+					ascii_out << f << '\n';
+				}
+			}
+		}
 
 
 	Clear:;
