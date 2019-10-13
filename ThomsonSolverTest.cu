@@ -42,7 +42,7 @@ __device__ void set_initial_state(T *f, T *d, size_t size) {
 
 template <typename T>
 __global__ void thomson_sweep_test_kernell(T *mem, size_t size, size_t span, size_t loop_count) {
-	size_t mem_shift = threadIdx.x * size * 6;
+	size_t mem_shift = (threadIdx.x + blockDim.x*blockIdx.x)* size * 6;
 	T *f = mem + mem_shift;
 	T *dfc = f + size, *a = f + 2 * size, *b = f + 3 * size, *c = f + 4 * size, *d = f + 5 * size;
 	set_initial_state(f, dfc, size);
@@ -70,7 +70,7 @@ int main() {
 	}
 
 	{
-		size_t size = 1024, span = 512;
+		size_t size = 1024, span = 1024;
 		vector<float> f_next(size);
 
 		//we need to allocate a number of grids size*span elements each
@@ -85,8 +85,9 @@ int main() {
 		}
 
 		{
+			unsigned threads_count = 512, blocks_count = span / threads_count;
 			auto begin = chrono::steady_clock::now(), end = begin;
-			thomson_sweep_test_kernell <<<1,span>>> (mem_dev, size, span, 10u);
+			thomson_sweep_test_kernell <<<blocks_count,threads_count>>> (mem_dev, size, span, 20000u);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
 				cout << "Kernell launch failed: " << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 				goto Clear;
@@ -107,8 +108,10 @@ int main() {
 					cout << "Memory copy device->host failed!" << endl;
 				}
 				else {
+					size_t column = 0;
 					for (auto f : f_next) {
-						ascii_out << f << ' ';
+						ascii_out << row << " " << column << " " << f << '\n';
+						++column;
 					}
 					ascii_out << endl;
 				}
