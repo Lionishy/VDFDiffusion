@@ -4,7 +4,7 @@
 #include <cuda_runtime.h>
 
 template <typename T>
-__device__ void calculate_tridiagonal_matrix(T const *f_dev, T const *d_dev, T *tsa_dev, T *tsb_dev, T *tsc_dev, T *tsd_dev, size_t size, T r) {
+__device__ void calculate_tridiagonal_matrix(T const *f_dev, T const *d_dev, T *tsa_dev, T *tsb_dev, T *tsc_dev, T *tsd_dev, size_t size, T r) { // r = dt/(dx*dx)
 	tsa_dev[0] = T(0); 
 	tsb_dev[0] = d_dev[0] * r / 2 + T(1); 
 	tsc_dev[0] = -d_dev[0] * r / 2;
@@ -24,24 +24,30 @@ __device__ void calculate_tridiagonal_matrix(T const *f_dev, T const *d_dev, T *
 }
 
 template <typename T>
-__device__ void set_initial_state(T *f_dev, T *d_dev, size_t size) {
+__device__ void diffusion_step(T *f, T *dfc, T *a, T *b, T *c, T *d, size_t size, T r) { // r = dt/(dx*dx)
+	calculate_tridiagonal_matrix(f, dfc, a, b, c, d, size, r);
+	iki::math::device::thomson_sweep(a, b, c, d, f, size - 1);
+}
+
+template <typename T>
+__device__ void set_initial_state(T *f, T *d, size_t size) {
 	T grad = T(1) / (size-1);
-	f_dev[0] = T(1); f_dev[size - 1] = T(0);
-	d_dev[0] = d_dev[size - 1] = T(1);
+	f[0] = T(1); f[size - 1] = T(0);
+	d[0] = d[size - 1] = T(1);
 	for (size_t idx = 1; idx != size - 1; ++idx) {
-		f_dev[idx] = T(1) - grad * idx;
-		d_dev[idx] = T(1);
+		f[idx] = T(1) - grad * idx;
+		d[idx] = T(1);
 	}
 }
 
 template <typename T>
-__global__ void thomson_sweep_test_kernell(T *f_dev, T *d_dev, T *tsa_dev, T *tsb_dev, T *tsc_dev, T *tsd_dev, T *tsx_dev, size_t size, size_t loop_count) {
-	set_initial_state(f_dev, d_dev, size);
+__global__ void thomson_sweep_test_kernell(T *mem, size_t size, size_t span, size_t loop_count) {
+	size_t mem_shift = threadIdx.x * size * 6;
+	T *f = mem + mem_shift;
+	T *dfc = f + size, *a = f + 2 * size, *b = f + 3 * size, *c = f + 4 * size, *d = f + 5 * size;
+	set_initial_state(f, dfc, size);
 	for (; loop_count != 0; --loop_count) {
-		calculate_tridiagonal_matrix(f_dev, d_dev, tsa_dev, tsb_dev, tsc_dev, tsd_dev, size, T(1.));
-		iki::math::device::thomson_sweep(tsa_dev, tsb_dev, tsc_dev, tsd_dev, tsx_dev, size-1);
-		for (size_t idx = 0; idx != size - 1; ++idx)
-			f_dev[idx] = tsx_dev[idx];
+		diffusion_step(f,dfc,a,b,c,d,size,T(1.));
 	}
 }
 
@@ -50,6 +56,8 @@ __global__ void thomson_sweep_test_kernell(T *f_dev, T *d_dev, T *tsa_dev, T *ts
 #include <algorithm>
 #include <vector>
 #include <fstream>
+#include <sstream>
+#include <chrono>
 
 int main() {
 	using namespace std;
@@ -62,98 +70,55 @@ int main() {
 	}
 
 	{
-		size_t size = 1024;
+		size_t size = 1024, span = 512;
 		vector<float> f_next(size);
 
-		//cuda function data
-		float *f_dev = NULL, *d_dev = NULL;
-		//cuda thomson sweep method data
-		float *tsa_dev = NULL, *tsb_dev = NULL, *tsc_dev = NULL, *tsd_dev = NULL, *tsx_dev = NULL;
-
-		if (cudaSuccess != cudaMalloc((void **)&f_dev, size * sizeof(float))) {
-			cout << "Can't allocate memory for function: " << size * sizeof(float) / 1024 << " Kb" << endl;
-			goto Clear;
-		}
-		if (cudaSuccess != cudaMalloc((void **)&d_dev, size * sizeof(float))) {
-			cout << "Can't allocate memory for diffusion coefficients: " << size * sizeof(float) / 1024 << " Kb" << endl;
-			goto Clear;
-		}
-		if (
-			cudaSuccess != cudaMalloc((void **)&tsa_dev, size * sizeof(float))
-			|| cudaSuccess != cudaMalloc((void **)&tsb_dev, size * sizeof(float))
-			|| cudaSuccess != cudaMalloc((void **)&tsc_dev, size * sizeof(float))
-			|| cudaSuccess != cudaMalloc((void **)&tsd_dev, size * sizeof(float))
-			|| cudaSuccess != cudaMalloc((void **)&tsx_dev, size * sizeof(float))
-		) {
-			cout << "Can't allocate memory for thomson sweep algorithm: " << 5 * size * sizeof(float) / 1024 << " Kb" << endl;
+		//we need to allocate a number of grids size*span elements each
+		//f_curr_dev, d_curr_dev
+		//we also need to allocate 4 grids for the Thomson sweep method
+		//a b c and d
+		//6 grids in total
+		float *mem_dev = NULL; //a pointer to the device global memory 
+		if (cudaSuccess != cudaMalloc((void **)&mem_dev, 6 * size * span * sizeof(float))) {
+			cout << "Can't allocate memory for function: " << 6 * size * span * sizeof(float) / 1024 << " Kb" << endl;
 			goto Clear;
 		}
 
-		thomson_sweep_test_kernell<<<1,1>>>(f_dev,d_dev,tsa_dev,tsb_dev,tsc_dev,tsd_dev,tsx_dev,size,200000u);
-		if (cudaSuccess != cudaGetLastError()) {
-			cout << "Kernell launch failed: " << cudaGetErrorString(cudaStatus) << endl;
+		{
+			auto begin = chrono::steady_clock::now(), end = begin;
+			thomson_sweep_test_kernell <<<1,span>>> (mem_dev, size, span, 10u);
+			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
+				cout << "Kernell launch failed: " << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+				goto Clear;
+			}
+			cudaDeviceSynchronize();
+			end = chrono::steady_clock::now();
+			cout << "Time consumed: "<< chrono::duration <double, milli>(end-begin).count() << " ms" << endl;
+		}
+		if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
+			cout << "Kernell execution failed: " << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 			goto Clear;
 		}
 		else {
 			cout << "Calculation Success!" << endl;
-			if (cudaSuccess != cudaMemcpy(f_next.data(), f_dev, size * sizeof(float), cudaMemcpyDeviceToHost)) {
-				cout << "Memory copy device->host failed!" << endl;
-			}
-			else {
-				ofstream ascii_out("./data/f.txt");
-				for (auto f : f_next) {
-					ascii_out << f << '\n';
+			ofstream ascii_out("./data/f.txt"); ascii_out.precision(7); ascii_out.setf(std::ios::fixed, std::ios::floatfield);
+			for (size_t row = 0; row != span; ++row) {
+				if (cudaSuccess != cudaMemcpy(f_next.data(), mem_dev + 6 * size * row, size * sizeof(float), cudaMemcpyDeviceToHost)) {
+					cout << "Memory copy device->host failed!" << endl;
+				}
+				else {
+					for (auto f : f_next) {
+						ascii_out << f << ' ';
+					}
+					ascii_out << endl;
 				}
 			}
 		}
 
 
 	Clear:;
-		if (f_dev != NULL) cudaFree(f_dev);
-		if (d_dev != NULL) cudaFree(d_dev);
-		if (tsa_dev != NULL) cudaFree(tsa_dev);
-		if (tsb_dev != NULL) cudaFree(tsb_dev);
-		if (tsc_dev != NULL) cudaFree(tsc_dev);
-		if (tsd_dev != NULL) cudaFree(tsd_dev);
-		if (tsx_dev != NULL) cudaFree(tsx_dev);
+		if (mem_dev != NULL) cudaFree(mem_dev);
 	}
-
-	
-
-	/*size_t size = 1000;
-	double *mem_dev = NULL;// 5 * size =>  *a_dev, *b_dev, *c_dev, *d_dev, *x_dev;
-	if (cudaSuccess != cudaMalloc((void **)&mem_dev, 5 * size * sizeof(double))) {
-		cout << "Can't allocate enought device memory!" << endl;
-		goto Clear;
-	}
-
-	set_test_matrix<<<1,1>>>(mem_dev, size);
-	cudaDeviceSynchronize();
-
-	cudaStatus = cudaGetLastError();
-	if (cudaSuccess != cudaStatus) {
-		cout << "Kernell launch failed: " << cudaGetErrorString(cudaStatus) << endl;
-		goto Clear;
-	}
-
-	thomson_sweep_test_kernell<<<1,1>>>(mem_dev, size);
-	cudaDeviceSynchronize();
-	{
-		vector<double> result(size);
-		if (cudaSuccess != cudaMemcpy(result.data(), mem_dev + 4 * size, size * sizeof(double), cudaMemcpyDeviceToHost)) {
-			cout << "Error while memory copy from device to host!" << endl;
-			goto Clear;
-		}
-
-		for_each(begin(result), end(result), [] (auto x) { std::cout << x << '\n'; });
-	}
-
-Clear:;
-	if (NULL != mem_dev) cudaFree(mem_dev);
-	if (cudaSuccess != cudaDeviceReset()) {
-		cout << "Error in device process termination!" << endl;
-	}*/
-
 
 	if (cudaSuccess != cudaDeviceReset()) {
 		cout << "Error in device process termination!" << endl;
