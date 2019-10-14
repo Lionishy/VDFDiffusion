@@ -11,6 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DiffusionStep.cuh" />
+    <ClInclude Include="StridedDiffusionStep.cuh" />
     <ClInclude Include="StridedThomsonSolver.cuh" />
     <ClInclude Include="StridedTridiagonalMatrixCalculation.cuh" />
     <ClInclude Include="ThomsonSolver.cuh" />

@@ -1,5 +1,6 @@
 
 #include "ThomsonSolver.cuh"
+#include "DiffusionStep.cuh"
 
 #include <cuda_runtime.h>
 
@@ -21,12 +22,6 @@ __device__ void calculate_tridiagonal_matrix(T const *f_dev, T const *d_dev, T *
 	tsb_dev[size - 2] = r / 2 * (d_dev[size - 3] + d_dev[size-2]) + T(1);
 	tsc_dev[size - 2] = T(0);
 	tsd_dev[size - 2] = f_dev[size - 2] + r / 2 * (f_dev[size - 3] * d_dev[size - 3] - f_dev[size - 2] * (d_dev[size - 3] + d_dev[size - 2]) + 2 * f_dev[size - 1] * d_dev[size - 2]);
-}
-
-template <typename T>
-__device__ void diffusion_step(T *f, T *dfc, T *a, T *b, T *c, T *d, size_t size, T r) { // r = dt/(dx*dx)
-	calculate_tridiagonal_matrix(f, dfc, a, b, c, d, size, r);
-	iki::math::device::thomson_sweep(a, b, c, d, f, size - 1);
 }
 
 template <typename T>

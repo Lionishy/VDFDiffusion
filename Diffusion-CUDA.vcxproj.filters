@@ -18,6 +18,12 @@
     <ClInclude Include="StridedTridiagonalMatrixCalculation.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
+    <ClInclude Include="DiffusionStep.cuh">
+      <Filter>Diffusion</Filter>
+    </ClInclude>
+    <ClInclude Include="StridedDiffusionStep.cuh">
+      <Filter>Diffusion</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="ThomsonSolverTest.cu" />

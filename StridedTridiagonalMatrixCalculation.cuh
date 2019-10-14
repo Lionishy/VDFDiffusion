@@ -6,7 +6,7 @@
 
 namespace iki { namespace diffusion { namespace device { 
 	template <typename T>
-	__device__ void calculate_tridiagonal_matrix(T const *f, T const *dfc, T *a, T *b, T *c, T *d, T r, size_t size, size_t stride) {
+	__device__ void strided_calculate_tridiagonal_matrix(T const *f, T const *dfc, T *a, T *b, T *c, T *d, T r, size_t size, size_t stride) {
 		a[0] = T(0);
 		b[0] = dfc[0] * r / 2 + T(1);
 		c[0] = -dfc[0] * r / 2;
