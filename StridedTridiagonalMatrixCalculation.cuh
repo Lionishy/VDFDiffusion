@@ -13,7 +13,7 @@ namespace iki { namespace diffusion { namespace device {
 		d[0] = f[0] + r / 2 * dfc[0] * (f[stride] -f[0]);
 
 		for (size_t idx = 1; idx != size - 2; ++idx) {
-			T stride_idx = idx * stride, stride_prev = stride_idx - stride, stride_next = stride_idx + stride;
+			size_t stride_idx = idx * stride, stride_prev = stride_idx - stride, stride_next = stride_idx + stride;
 			a[stride_idx] = -r / 2 * dfc[stride_prev];
 			b[stride_idx] = r / 2 * (dfc[stride_prev] + dfc[stride_idx]) + T(1);
 			c[stride_idx] = -r / 2 * dfc[stride_idx];

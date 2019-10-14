@@ -8,7 +8,7 @@ namespace iki { namespace math { namespace device {
 	template <typename T>
 	__device__ void strided_thomson_sweep(T *a, T *b, T *c, T *d, T *x, size_t size, size_t stride) {
 		for (size_t idx = 1; idx != size; ++idx) {
-			T stride_idx = idx * stride;
+			size_t stride_idx = idx * stride;
 			T w = a[stride_idx] / b[stride_idx - stride];
 			b[stride_idx] = b[stride_idx] - w * c[stride_idx - stride];
 			d[stride_idx] = d[stride_idx] - w * d[stride_idx - stride];
