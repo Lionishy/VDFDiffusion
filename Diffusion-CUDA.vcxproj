@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StridedThomsonSolver.cuh" />
+    <ClInclude Include="StridedTridiagonalMatrixCalculation.cuh" />
     <ClInclude Include="ThomsonSolver.cuh" />
   </ItemGroup>
   <ItemGroup>
