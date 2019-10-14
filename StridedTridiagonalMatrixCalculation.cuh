@@ -21,11 +21,11 @@ namespace iki { namespace diffusion { namespace device {
 		}
 
 		{
-			T stride_idx = stride * (size - 2), stride_prev = stride_idx - stride, stride_next = stride_idx + stride;
+			size_t stride_idx = stride * (size - 2), stride_prev = stride_idx - stride, stride_next = stride_idx + stride;
 			a[stride_idx] = -r / 2 * dfc[stride_prev];
 			b[stride_idx] = r / 2 * (dfc[stride_prev] + dfc[stride_idx]) + T(1);
 			c[stride_idx] = T(0);
-			d[stride_idx = f[stride_idx] + r / 2 * (f[stride_prev] * dfc[stride_prev] - f[stride_idx] * (dfc[stride_prev] + dfc[stride_idx]) + 2 * f[stride_next] * dfc[stride_idx]);
+			d[stride_idx] = f[stride_idx] + r / 2 * (f[stride_prev] * dfc[stride_prev] - f[stride_idx] * (dfc[stride_prev] + dfc[stride_idx]) + 2 * f[stride_next] * dfc[stride_idx]);
 		}
 	}
 } /* device */ } /* diffusion */ } /* iki */

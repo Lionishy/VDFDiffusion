@@ -27,5 +27,6 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="ThomsonSolverTest.cu" />
+    <CudaCompile Include="StridedThomsonSolverTest.cu" />
   </ItemGroup>
 </Project>

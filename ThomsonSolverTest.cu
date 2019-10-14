@@ -42,7 +42,7 @@ __global__ void thomson_sweep_test_kernell(T *mem, size_t size, size_t span, siz
 	T *dfc = f + size, *a = f + 2 * size, *b = f + 3 * size, *c = f + 4 * size, *d = f + 5 * size;
 	set_initial_state(f, dfc, size);
 	for (; loop_count != 0; --loop_count) {
-		diffusion_step(f,dfc,a,b,c,d,size,T(1.));
+		iki::diffusion::device::diffusion_step(f,dfc,a,b,c,d,size,T(1.));
 	}
 }
 
@@ -54,7 +54,7 @@ __global__ void thomson_sweep_test_kernell(T *mem, size_t size, size_t span, siz
 #include <sstream>
 #include <chrono>
 
-int main() {
+int mainA() {
 	using namespace std;
 
 	cudaError_t cudaStatus;
