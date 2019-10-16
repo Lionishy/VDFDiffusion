@@ -18,6 +18,7 @@
     <ClInclude Include="ThomsonSolver.cuh" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="AccurateThomsonSweepTest.cu" />
     <CudaCompile Include="StridedThomsonSolverTest.cu" />
     <CudaCompile Include="ThomsonSolverTest.cu" />
   </ItemGroup>
