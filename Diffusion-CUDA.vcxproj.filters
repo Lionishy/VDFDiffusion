@@ -10,4 +10,7 @@
       <Filter>Math</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="TransposeTest.cu" />
+  </ItemGroup>
 </Project>
