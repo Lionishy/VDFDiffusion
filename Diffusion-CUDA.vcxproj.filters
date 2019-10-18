@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Math">
+      <UniqueIdentifier>{1f18e1d6-f9c8-4d9e-b80c-5dc2a5860c32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Diffusion">
+      <UniqueIdentifier>{967188e5-2d2a-4a02-a7eb-3cac3d758d4c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
