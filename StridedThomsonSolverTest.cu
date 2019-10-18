@@ -46,7 +46,7 @@ __global__ void strided_thomson_sweep_test_kernell(T *mem, size_t size, size_t s
 #include <sstream>
 #include <chrono>
 
-int main() {
+int strided_thomson_solver_test() {
 	using namespace std;
 
 	cudaError_t cudaStatus;
@@ -73,7 +73,7 @@ int main() {
 		{
 			unsigned threads_count = 512, blocks_count = span / threads_count;
 			auto begin = chrono::steady_clock::now(), end = begin;
-			strided_thomson_sweep_test_kernell <<<blocks_count, threads_count>>> (mem_dev, size, span, 2000u);
+			strided_thomson_sweep_test_kernell <<<blocks_count, threads_count>>> (mem_dev, size, span, 20000u);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
 				cout << "Kernell launch failed: " << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 				goto Clear;

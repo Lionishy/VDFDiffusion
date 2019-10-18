@@ -54,7 +54,7 @@ __global__ void thomson_sweep_test_kernell(T *mem, size_t size, size_t span, siz
 #include <sstream>
 #include <chrono>
 
-int mainA() {
+void thomson_solver_test() {
 	using namespace std;
 
 	cudaError_t cudaStatus;
@@ -122,5 +122,5 @@ int mainA() {
 		cout << "Error in device process termination!" << endl;
 	}
 End:;
-	return 0;
+	return;
 }

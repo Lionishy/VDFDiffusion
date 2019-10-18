@@ -21,6 +21,9 @@
     <ClInclude Include="StridedDiffusionStep.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
+    <ClInclude Include="StridedThomsonSolver.cuh">
+      <Filter>Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="ThomsonSolverTest.cu" />
