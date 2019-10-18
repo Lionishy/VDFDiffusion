@@ -11,6 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="StridedThomsonSolver.cuh" />
+    <ClInclude Include="ThomsonSolver.cuh" />
     <ClInclude Include="Transpose.cuh" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
