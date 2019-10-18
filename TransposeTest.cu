@@ -27,19 +27,9 @@ int main() {
 	}
 
 	{
-		size_t x_size = 1024, y_size = 1024, tile_size = 32;
-		vector<float> matrix(x_size * y_size), matrixT(x_size*y_size);
+		size_t x_size = 1024, y_size = 1024;
+		vector<float> matrix(x_size * y_size), matrixT(x_size * y_size);
 		init_matrix(matrix, x_size, y_size);
-
-		{
-			ofstream ascii_out("./data/matrix.txt");
-			ascii_out.precision(7); ascii_out.setf(ios::fixed, ios::floatfield);
-			for (size_t y_idx = 0; y_idx != y_size; ++y_idx) {
-				for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
-					ascii_out << matrix[x_idx + y_idx * x_size] << "|";
-				ascii_out << "####" << endl;
-			}
-		}
 
 		if (cudaSuccess != (cudaStatus = cudaMalloc((void **)&mem_dev, 2 * x_size * y_size * sizeof(float)))) {
 			cout << "Can't allocate global memory of " << (x_size * y_size * sizeof(float)) / 1024 << " Kb" << endl;
@@ -53,26 +43,12 @@ int main() {
 			goto Clear;
 		}
 		{
+			constexpr unsigned const tile_dim = 32u, block_rows = 8u;
 			auto begin = chrono::steady_clock::now(), end = begin;
-			dim3 blockDim(x_size / tile_size, y_size / tile_size);
-			dim3 threadDim(tile_size, tile_size);
-			if (false) {
-				for (unsigned rep = 0; rep != 1024; ++rep)
-				simple_transpose_kernel<<<blockDim, threadDim>>>(mem_dev + x_size * y_size, mem_dev, x_size, y_size, tile_size);
-			}
-
-			if (false) {
-				for (unsigned rep = 0; rep != 1024; ++rep)
-				naiive_transpose_kernel<<<blockDim, threadDim>>>(mem_dev + x_size * y_size, mem_dev, x_size, y_size, tile_size);
-			}
-
-			if (true) {
-				dim3 grid(32,32), threads(32, 8);
-				for (unsigned rep = 0; rep != 10000; ++rep)
-					paper_transpose_kernell <<<grid, threads>>>(mem_dev + x_size * y_size, mem_dev, x_size, y_size);
-			}
+			dim3 grid(x_size/tile_dim,y_size/tile_dim), threads(tile_dim, block_rows);
+			for (unsigned rep = 0; rep != 10000; ++rep)
+				transpose_kernell<tile_dim,block_rows><<<grid, threads>>>(mem_dev + x_size * y_size, mem_dev, x_size, y_size);
 			cudaDeviceSynchronize();
-
 			end = chrono::steady_clock::now();
 			cout << "Time consumed: " << chrono::duration <double, milli>(end - begin).count() << " ms" << endl;
 		}
@@ -91,10 +67,10 @@ int main() {
 
 		{
 			ofstream ascii_out("./data/matrixT.txt");
-			ascii_out.precision(7); ascii_out.setf(ios::fixed, ios::floatfield);
+			ascii_out.setf(ios::scientific, ios::floatfield);
 			for (size_t y_idx = 0; y_idx != y_size; ++y_idx) {
 				for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
-					ascii_out << matrix[x_idx + y_idx * x_size] - matrixT[y_idx + x_idx*y_size] << "|";
+					ascii_out << matrix[x_idx + y_idx * x_size] - matrixT[y_idx + x_idx*y_size] << " | ";
 				ascii_out << "####" << endl;
 			}
 		}
