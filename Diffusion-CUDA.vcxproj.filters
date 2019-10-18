@@ -8,4 +8,9 @@
       <UniqueIdentifier>{967188e5-2d2a-4a02-a7eb-3cac3d758d4c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Transpose.cuh">
+      <Filter>Math</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
