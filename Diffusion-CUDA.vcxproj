@@ -11,7 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DiagonalDiscretization.cuh" />
     <ClInclude Include="StridedThomsonSolver.cuh" />
+    <ClInclude Include="ForwardStepTridiagonalMatrixCalculation.cuh" />
     <ClInclude Include="ThomsonSolver.cuh" />
     <ClInclude Include="ThomsonSolverKernel.cuh" />
     <ClInclude Include="Transpose.cuh" />
