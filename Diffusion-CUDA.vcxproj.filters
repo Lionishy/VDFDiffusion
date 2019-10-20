@@ -27,5 +27,8 @@
     <ClInclude Include="DiagonalDiscretization.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
+    <ClInclude Include="CorrectionStepTridiagonalMatrixClaculation.cuh">
+      <Filter>Diffusion</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

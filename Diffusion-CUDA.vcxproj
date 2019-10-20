@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CorrectionStepTridiagonalMatrixClaculation.cuh" />
     <ClInclude Include="DiagonalDiscretization.cuh" />
     <ClInclude Include="StridedThomsonSolver.cuh" />
     <ClInclude Include="ForwardStepTridiagonalMatrixCalculation.cuh" />
