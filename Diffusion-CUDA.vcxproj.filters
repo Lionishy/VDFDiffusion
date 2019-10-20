@@ -33,5 +33,8 @@
     <ClInclude Include="ForwardStepKernel.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
+    <ClInclude Include="CorrectionStepKernel.cuh">
+      <Filter>Diffusion</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
