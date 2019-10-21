@@ -27,8 +27,8 @@ void x_initial_diffusion(std::vector<T> &dfc, size_t x_size, size_t y_size) {
 	for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
 		dfc[x_idx * y_size] = dfc[y_size-1 + x_idx*y_size] = T(0);
 
-	for (size_t x_idx = 1; x_idx != x_size - 2; ++x_idx)
-		for (size_t y_idx = 1; y_idx != y_size - 2; ++y_idx)
+	for (size_t x_idx = 1; x_idx != x_size - 1; ++x_idx)
+		for (size_t y_idx = 1; y_idx != y_size - 1; ++y_idx)
 			dfc[x_idx * y_size + y_idx] = T(1);
 }
 
@@ -101,7 +101,7 @@ int main() {
 
 		int blockDim = 1, threads = 1022;
 		auto begin = chrono::steady_clock::now(), end = begin;
-		for (int count = 0; count != 1; ++count) {
+		for (int count = 0; count != 10000; ++count) {
 			diffusion::device::forward_step_multisolver_kernel<<<blockDim, threads>>>(f_prev, x_dfc, y_dfc, a, b, c, d, rx, ry, x_size - 2, y_size /*x_sitride*/, x_size /*y_stride*/);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
 				cout << "Kernel launch failed!" << endl;
@@ -117,14 +117,13 @@ int main() {
 				cudaDeviceSynchronize();
 				goto Clear;
 			}
-			cudaDeviceSynchronize();
 		}
 
 		cudaDeviceSynchronize();
 		end = chrono::steady_clock::now();
 		cerr << "Time consumed: " << chrono::duration <double, milli>(end - begin).count() << " ms" << endl;
 
-		if (cudaSuccess != (cudaStatus = cudaMemcpy(f.data(), d - (y_size + 1), x_size*y_size * sizeof(float), cudaMemcpyDeviceToHost))) {
+		if (cudaSuccess != (cudaStatus = cudaMemcpy(f.data(), gm_dev, x_size*y_size * sizeof(float), cudaMemcpyDeviceToHost))) {
 			cout << "Can't copy data from f_prev to host:" << endl;
 			cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 			goto Clear;
@@ -132,9 +131,9 @@ int main() {
 		else {
 			ofstream ascii_out("./data/matrix.txt");
 			ascii_out.precision(7); ascii_out.setf(ios::fixed, ios::floatfield);
-			for (size_t y_idx = 0; y_idx != y_size-2; ++y_idx)
-				for (size_t x_idx = 0; x_idx != x_size-2; ++x_idx)
-					ascii_out << x_idx << " " << y_idx << " " << f[y_size + 1 + x_idx * y_size + y_idx] << endl;
+			for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
+				for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
+					ascii_out << x_idx << " " << y_idx << " " << f[x_idx * y_size + y_idx] << endl;
 		}
 	}
 
