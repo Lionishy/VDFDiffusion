@@ -2,6 +2,8 @@
 #ifndef ForwardStepKernel_CUH
 #define ForwardStepKernel_CUH
 
+#include "ForwardStepTridiagonalMatrixCalculation.cuh"
+
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 

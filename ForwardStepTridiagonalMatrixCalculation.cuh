@@ -5,7 +5,7 @@
 #include "DiagonalDiscretization.cuh"
 #include <cuda_runtime.h>
 
-namespace iki { namespace math { namespace device { 
+namespace iki { namespace diffusion { namespace device { 
 	template <typename T>
 	__device__ void forward_step_tridiagonal_matrix(T const *f, T const *x_dfc, T const *y_dfc, T *a, T *b, T *c, T *d, T rx, T ry, size_t size, size_t x_stride, size_t y_stride) {
 		a[0] = T(0);
