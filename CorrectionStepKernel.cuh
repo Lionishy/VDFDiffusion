@@ -2,6 +2,8 @@
 #ifndef CorrectionStepKernel_CUH
 #define CorrectionStepKernel_CUH
 
+#include "CorrectionStepTridiagonalMatrixCalculation.cuh"
+
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 

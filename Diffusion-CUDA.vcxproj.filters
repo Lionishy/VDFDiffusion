@@ -27,13 +27,13 @@
     <ClInclude Include="DiagonalDiscretization.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
-    <ClInclude Include="CorrectionStepTridiagonalMatrixClaculation.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
     <ClInclude Include="ForwardStepKernel.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
     <ClInclude Include="CorrectionStepKernel.cuh">
+      <Filter>Diffusion</Filter>
+    </ClInclude>
+    <ClInclude Include="CorrectionStepTridiagonalMatrixCalculation.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
   </ItemGroup>

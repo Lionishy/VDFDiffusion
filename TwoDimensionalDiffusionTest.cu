@@ -1,5 +1,7 @@
 #include "ForwardStepKernel.cuh"
+#include "CorrectionStepKernel.cuh"
 #include "ThomsonSolverKernel.cuh"
+#include "Transpose.cuh"
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
@@ -9,6 +11,7 @@
 #include <sstream>
 #include <vector>
 #include <chrono>
+#include <utility>
 
 template <typename T>
 void initial_value(std::vector<T> &f, size_t x_size, size_t y_size) {
@@ -34,9 +37,15 @@ void x_initial_diffusion(std::vector<T> &dfc, size_t x_size, size_t y_size) {
 
 template <typename T>
 void y_initial_diffusion(std::vector<T> &dfc, size_t x_size, size_t y_size) {
+	for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
+		dfc[y_idx] = dfc[(x_size - 1) * y_size + y_idx] = dfc[(x_size - 2) * y_size + y_idx] = T(0);
+
 	for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
-		for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
-			dfc[x_idx * y_size + y_idx] = T(0);
+		dfc[x_idx * y_size] = dfc[y_size - 1 + x_idx * y_size] = T(0);
+
+	for (size_t x_idx = 1; x_idx != x_size - 2; ++x_idx)
+		for (size_t y_idx = 1; y_idx != y_size - 1; ++y_idx)
+			dfc[x_idx * y_size + y_idx] = T(1.e-6);
 }
 
 int main() {
@@ -53,7 +62,6 @@ int main() {
 	size_t x_size = 1024, y_size = 1024;
 	vector<float> f(x_size * y_size), x_diffusion(x_size * y_size), y_diffusion(x_size * y_size);
 	initial_value(f, x_size, y_size); x_initial_diffusion(x_diffusion, x_size, y_size); y_initial_diffusion(y_diffusion, x_size, y_size);
-	vector<float> host_a((x_size - 2) * (y_size - 2));
 	float rx = 1.f, ry = 1.f;
 
 	if (cudaSuccess != (cudaStatus = cudaSetDevice(0))) {
@@ -62,68 +70,147 @@ int main() {
 		goto End;
 	}
 
-	if (cudaSuccess != (cudaStatus = cudaMalloc((void **)&gm_dev, 8 * x_size * y_size * sizeof(float)))) {
-		cerr << "Can't allocate global device memory of " << (8*x_size*y_size*sizeof(float)/1024) << " Kb: " << endl;
+	if (cudaSuccess != (cudaStatus = cudaMalloc((void **)&gm_dev, 9 * x_size * y_size * sizeof(float)))) {
+		cerr << "Can't allocate global device memory of " << (9*x_size*y_size*sizeof(float)/1024) << " Kb: " << endl;
 		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 		goto Clear;
 	}
 	else {
-		cerr << (8 * x_size * y_size * sizeof(float) / 1024) << " Kb: " << " successfully allocated!" << endl;
+		cerr << (9 * x_size * y_size * sizeof(float) / 1024) << " Kb: " << " successfully allocated!" << endl;
 	}
 
 	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev, f.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
-		cout << "Can't copy data from f to device:" << endl;
-		cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+		cerr << "Can't copy data from f to device:" << endl;
+		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 		goto Clear;
 	}
 
-	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + x_size*y_size, f.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
-		cout << "Can't copy data from f to device:" << endl;
-		cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + x_size * y_size, f.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
+		cerr << "Can't copy data from f to device:" << endl;
+		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 		goto Clear;
 	}
 
-	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + 2*x_size*y_size, x_diffusion.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
+	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + 3 * x_size * y_size, x_diffusion.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
 		cout << "Can't copy data from x_dfc to device:" << endl;
 		cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 		goto Clear;
 	}
 
-	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + 3 * x_size * y_size, y_diffusion.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
-		cout << "Can't copy data from y_dfc to device:" << endl;
-		cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + 4 * x_size * y_size, y_diffusion.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
+		cerr << "Can't copy data from y_dfc to device:" << endl;
+		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 		goto Clear;
 	}
 
 	{
-		size_t matrix_size = x_size * y_size;
-		float *f_prev = gm_dev + y_size + 1, *f_curr = f_prev + matrix_size, *x_dfc = f_curr + matrix_size, *y_dfc = x_dfc + matrix_size, *a = y_dfc + matrix_size, *b = a + matrix_size, *c = b + matrix_size, *d = c + matrix_size;
+		size_t matrix_size = x_size * y_size, matrix_shift = y_size + 1;
+		float *f_prev = gm_dev + y_size + 1, *f_curr = f_prev + matrix_size, *f_tmp = f_curr + matrix_size, *x_dfc = f_tmp + matrix_size, *y_dfc = x_dfc + matrix_size, *a = y_dfc + matrix_size, *b = a + matrix_size, *c = b + matrix_size, *d = c + matrix_size;
 
 		int blockDim = 1, threads = 1022;
 		auto begin = chrono::steady_clock::now(), end = begin;
-		for (int count = 0; count != 10000; ++count) {
+		for (int count = 0; count != 1000; ++count) {
 			diffusion::device::forward_step_multisolver_kernel<<<blockDim, threads>>>(f_prev, x_dfc, y_dfc, a, b, c, d, rx, ry, x_size - 2, y_size /*x_sitride*/, x_size /*y_stride*/);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
-				cout << "Kernel launch failed!" << endl;
-				cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+				cerr << "On iteration " << count << " forward step calculation kernel launch failed!" << endl;
+				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 				cudaDeviceSynchronize();
 				goto Clear;
 			}
 
-			math::device::thomson_multisolver_kernell<<<blockDim, threads>>>(a, b, c, d, f_prev, x_size - 2, y_size);
+			math::device::thomson_multisolver_kernell<<<blockDim, threads>>>(a, b, c, d, f_curr, x_size - 2, y_size);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
-				cout << "Kernel launch failed!" << endl;
-				cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+				cerr << "On iteration " << count << "forward step thomson solver kernel launch failed!" << endl;
+				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 				cudaDeviceSynchronize();
 				goto Clear;
 			}
-		}
 
+			{
+				float *f_prev_full = f_prev - matrix_shift, *f_curr_full = f_curr - matrix_shift, *f_tmp_full = f_tmp - matrix_shift;
+				constexpr unsigned const tile_dim = 32u, block_rows = 8u;
+				dim3 grid(x_size / tile_dim, y_size / tile_dim), threads(tile_dim, block_rows);
+				math::device::transpose_kernell<tile_dim, block_rows><<<grid, threads>>>(f_tmp_full, f_curr_full, x_size, y_size);
+				if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
+					cerr << "On iteration " << count << "f_curr to f_tmp transpose kernel launch failed!" << endl;
+					cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+					cudaDeviceSynchronize();
+					goto Clear;
+				}
+
+				math::device::transpose_kernell<tile_dim, block_rows><<<grid, threads>>>(f_curr_full, f_prev_full, x_size, y_size);
+				if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
+					cerr << "On iteration " << count << "f_prev to f_curr transpose kernel launch failed!" << endl;
+					cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+					cudaDeviceSynchronize();
+					goto Clear;
+				}
+
+				auto rotate_tmp = f_prev_full;
+				f_prev_full = f_curr_full;
+				f_curr_full = f_tmp_full;
+				f_tmp_full = rotate_tmp;
+
+				matrix_shift = x_size + 1;
+				f_prev = f_prev_full + matrix_shift;
+				f_curr = f_curr_full + matrix_shift;
+				f_tmp = f_tmp_full + matrix_shift;
+			}
+			
+			diffusion::device::correction_step_multisolver_kernel<<<blockDim,threads>>>(f_prev, f_curr, y_dfc, a, b, c, d, ry, y_size-2, x_size);
+			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
+				cerr << "On iteration " << count << " correction step calculation kernel launch failed!" << endl;
+				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+				cudaDeviceSynchronize();
+				goto Clear;
+			}
+
+			math::device::thomson_multisolver_kernell<<<blockDim,threads>>>(a, b, c, d, f_curr, y_size - 2, x_size);
+			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
+				cerr << "On iteration " << count << "correction step thomson solver kernel launch failed!" << endl;
+				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+				cudaDeviceSynchronize();
+				goto Clear;
+			}
+
+			{
+				float *f_prev_full = f_prev - matrix_shift, *f_curr_full = f_curr - matrix_shift, *f_tmp_full = f_tmp - matrix_shift;
+				constexpr unsigned const tile_dim = 32u, block_rows = 8u;
+				dim3 grid(y_size / tile_dim, x_size / tile_dim), threads(tile_dim, block_rows);
+				math::device::transpose_kernell<tile_dim, block_rows><<<grid, threads>>>(f_tmp_full, f_curr_full, y_size, x_size);
+				if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
+					cerr << "On iteration " << count << "f_curr to f_tmp transpose kernel launch failed!" << endl;
+					cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+					cudaDeviceSynchronize();
+					goto Clear;
+				}
+
+				math::device::transpose_kernell<tile_dim, block_rows><<<grid, threads>>>(f_curr_full, f_prev_full, y_size, x_size);
+				if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
+					cerr << "On iteration " << count << "f_prev to f_curr transpose kernel launch failed!" << endl;
+					cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+					cudaDeviceSynchronize();
+					goto Clear;
+				}
+
+				auto rotate_tmp = f_prev_full;
+				f_prev_full = f_curr_full;
+				f_curr_full = f_tmp_full;
+				f_tmp_full = rotate_tmp;
+
+				matrix_shift = y_size + 1;
+				f_prev = f_prev_full + matrix_shift;
+				f_curr = f_curr_full + matrix_shift;
+				f_tmp = f_tmp_full + matrix_shift;
+			}
+
+			swap(f_prev, f_curr);
+		}
 		cudaDeviceSynchronize();
 		end = chrono::steady_clock::now();
 		cerr << "Time consumed: " << chrono::duration <double, milli>(end - begin).count() << " ms" << endl;
 
-		if (cudaSuccess != (cudaStatus = cudaMemcpy(f.data(), gm_dev, x_size*y_size * sizeof(float), cudaMemcpyDeviceToHost))) {
+		if (cudaSuccess != (cudaStatus = cudaMemcpy(f.data(), f_prev - matrix_shift, x_size*y_size * sizeof(float), cudaMemcpyDeviceToHost))) {
 			cout << "Can't copy data from f_prev to host:" << endl;
 			cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 			goto Clear;

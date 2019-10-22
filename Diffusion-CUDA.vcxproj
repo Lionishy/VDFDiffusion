@@ -12,7 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CorrectionStepKernel.cuh" />
-    <ClInclude Include="CorrectionStepTridiagonalMatrixClaculation.cuh" />
+    <ClInclude Include="CorrectionStepTridiagonalMatrixCalculation.cuh" />
     <ClInclude Include="DiagonalDiscretization.cuh" />
     <ClInclude Include="ForwardStepKernel.cuh" />
     <ClInclude Include="StridedThomsonSolver.cuh" />
