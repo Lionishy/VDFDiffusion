@@ -11,7 +11,7 @@ namespace iki { namespace diffusion { namespace device {
 		a[0] = T(0);
 		b[0] = (x_dfc[-x_stride] + x_dfc[0]) * rx / 2 + T(1);
 		c[0] = -x_dfc[0] * rx / 2;
-		d[0] = f[0] + rx / 2 * diagonal_discretization(f[-x_stride], f[0], f[x_stride], x_dfc[-x_stride], x_dfc[0]) + ry * diagonal_discretization(f[-1],f[0],f[1],y_dfc[-y_stride],y_dfc[0]);
+		d[0] = f[0] + rx / 2 * (diagonal_discretization(f[-x_stride], f[0], f[x_stride], x_dfc[-x_stride], x_dfc[0]) + f[-x_stride] * x_dfc[-x_stride]) + ry * diagonal_discretization(f[-1],f[0],f[1],y_dfc[-y_stride],y_dfc[0]);
 
 		for (size_t idx = 1; idx != size - 1; ++idx) {
 			size_t stride_idx = idx * x_stride, stride_prev = stride_idx - x_stride, stride_next = stride_idx + x_stride;
