@@ -42,6 +42,33 @@ void initial_y_dfc(std::vector<T> &dfc, size_t x_size, size_t y_size) {
 			dfc[x_idx * y_size + y_idx] = T(1);
 }
 
+template <unsigned tile_dim, unsigned block_rows, typename T>
+cudaError_t cycle_transpose(T **f_prev, T **f_curr, T **f_tmp, size_t x_size, size_t y_size, size_t &matrix_shift) {
+	cudaError_t cudaStatus;
+
+	float *f_prev_full = *f_prev - matrix_shift, *f_curr_full = *f_curr - matrix_shift, *f_tmp_full = *f_tmp - matrix_shift;
+	dim3 grid(x_size / tile_dim, y_size / tile_dim), threads(tile_dim, block_rows);
+	iki::math::device::transpose_kernell<tile_dim, block_rows><<<grid, threads>>>(f_tmp_full, f_curr_full, x_size, y_size);
+	if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+		return cudaStatus;
+
+	iki::math::device::transpose_kernell<tile_dim, block_rows><<<grid, threads>>>(f_curr_full, f_prev_full, x_size, y_size);
+	if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+		return cudaStatus;
+
+	auto rotate_tmp = f_prev_full;
+	f_prev_full = f_curr_full;
+	f_curr_full = f_tmp_full;
+	f_tmp_full = rotate_tmp;
+
+	matrix_shift = x_size + 1;
+	*f_prev = f_prev_full + matrix_shift;
+	*f_curr = f_curr_full + matrix_shift;
+	*f_tmp = f_tmp_full + matrix_shift;
+
+	return cudaStatus;
+}
+
 int main() {
 	using namespace std;
 	using namespace iki;
@@ -53,7 +80,7 @@ int main() {
 
 	cudaError_t cudaStatus;
 	float *gm_dev = NULL;
-	size_t x_size = 512, y_size = 512;
+	size_t x_size = 1024, y_size = 1024;
 	vector<float> f(x_size * y_size), x_diffusion(x_size * y_size), y_diffusion(x_size * y_size);
 	initial_value(f, x_size, y_size); initial_x_dfc(x_diffusion, x_size, y_size); initial_y_dfc(y_diffusion, x_size, y_size);
 	float rx = 1.0f, ry = 1.0f;
@@ -103,7 +130,7 @@ int main() {
 
 		int blockDim = 1, threads = x_size - 2;
 		auto begin = chrono::steady_clock::now(), end = begin;
-		for (int count = 0; count != 10000; ++count) {
+		for (int count = 0; count != 1000; ++count) {
 			diffusion::device::forward_step_multisolver_kernel<<<blockDim, threads>>>(f_prev, x_dfc, y_dfc, a, b, c, d, rx, ry, x_size - 2, y_size, x_size );
 			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
 				cerr << "On iteration " << count << " forward step calculation kernel launch failed!" << endl;
@@ -114,41 +141,19 @@ int main() {
 
 			math::device::thomson_multisolver_kernell<<<blockDim, threads>>>(a, b, c, d, f_curr, x_size - 2, y_size);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
-				cerr << "On iteration " << count << "forward step thomson solver kernel launch failed!" << endl;
+				cerr << "On iteration " << count << " forward step thomson solver kernel launch failed!" << endl;
 				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 				cudaDeviceSynchronize();
 				goto Clear;
 			}
 
 			{
-				float *f_prev_full = f_prev - matrix_shift, *f_curr_full = f_curr - matrix_shift, *f_tmp_full = f_tmp - matrix_shift;
-				constexpr unsigned const tile_dim = 32u, block_rows = 8u;
-				dim3 grid(x_size / tile_dim, y_size / tile_dim), threads(tile_dim, block_rows);
-				math::device::transpose_kernell<tile_dim, block_rows><<<grid, threads>>>(f_tmp_full, f_curr_full, x_size, y_size);
-				if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
-					cerr << "On iteration " << count << "f_curr to f_tmp transpose kernel launch failed!" << endl;
+				if (cudaSuccess != (cudaStatus = cycle_transpose<32u,8u>(&f_prev,&f_curr,&f_tmp,x_size,y_size,matrix_shift))) {
+					cerr << "On iteration " << count << " transposition after forward step failed!" << endl;
 					cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 					cudaDeviceSynchronize();
 					goto Clear;
 				}
-
-				math::device::transpose_kernell<tile_dim, block_rows><<<grid, threads>>>(f_curr_full, f_prev_full, x_size, y_size);
-				if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
-					cerr << "On iteration " << count << "f_prev to f_curr transpose kernel launch failed!" << endl;
-					cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-					cudaDeviceSynchronize();
-					goto Clear;
-				}
-
-				auto rotate_tmp = f_prev_full;
-				f_prev_full = f_curr_full;
-				f_curr_full = f_tmp_full;
-				f_tmp_full = rotate_tmp;
-
-				matrix_shift = x_size + 1;
-				f_prev = f_prev_full + matrix_shift;
-				f_curr = f_curr_full + matrix_shift;
-				f_tmp = f_tmp_full + matrix_shift;
 			}
 			
 			diffusion::device::correction_step_multisolver_kernel<<<blockDim,threads>>>(f_prev, f_curr, y_dfc, a, b, c, d, ry, y_size-2, x_size);
@@ -168,34 +173,12 @@ int main() {
 			}
 
 			{
-				float *f_prev_full = f_prev - matrix_shift, *f_curr_full = f_curr - matrix_shift, *f_tmp_full = f_tmp - matrix_shift;
-				constexpr unsigned const tile_dim = 32u, block_rows = 8u;
-				dim3 grid(y_size / tile_dim, x_size / tile_dim), threads(tile_dim, block_rows);
-				math::device::transpose_kernell<tile_dim, block_rows><<<grid, threads>>>(f_tmp_full, f_curr_full, y_size, x_size);
-				if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
-					cerr << "On iteration " << count << "f_curr to f_tmp transpose kernel launch failed!" << endl;
+				if (cudaSuccess != (cudaStatus = cycle_transpose<32u, 8u>(&f_prev, &f_curr, &f_tmp, y_size, x_size, matrix_shift))) {
+					cerr << "On iteration " << count << " transposition after forward step failed!" << endl;
 					cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 					cudaDeviceSynchronize();
 					goto Clear;
 				}
-
-				math::device::transpose_kernell<tile_dim, block_rows><<<grid, threads>>>(f_curr_full, f_prev_full, y_size, x_size);
-				if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
-					cerr << "On iteration " << count << "f_prev to f_curr transpose kernel launch failed!" << endl;
-					cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-					cudaDeviceSynchronize();
-					goto Clear;
-				}
-
-				auto rotate_tmp = f_prev_full;
-				f_prev_full = f_curr_full;
-				f_curr_full = f_tmp_full;
-				f_tmp_full = rotate_tmp;
-
-				matrix_shift = y_size + 1;
-				f_prev = f_prev_full + matrix_shift;
-				f_curr = f_curr_full + matrix_shift;
-				f_tmp = f_tmp_full + matrix_shift;
 			}
 			
 			swap(f_prev, f_curr);
