@@ -69,18 +69,47 @@ cudaError_t cycle_transpose(T **f_prev, T **f_curr, T **f_tmp, size_t x_size, si
 	return cudaStatus;
 }
 
+template <typename T>
+cudaError_t iteration_step(T **f_prev, T **f_curr, T **f_tmp, T *x_dfc, T *y_dfc, T *a, T *b, T *c, T *d, T rx, T ry, size_t x_size, size_t y_size) {
+	cudaError_t cudaStatus;
+	int threads, blockDim;
+	size_t matrix_shift = x_size + 1;
+
+	blockDim = 1; threads = x_size - 2;
+	iki::diffusion::device::forward_step_multisolver_kernel<<<blockDim, threads>>>(*f_prev, x_dfc, y_dfc, a, b, c, d, rx, ry, x_size - 2, y_size, x_size);
+	if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+		return cudaStatus;
+
+	iki::math::device::thomson_multisolver_kernell<<<blockDim, threads>>>(a, b, c, d, *f_curr, x_size - 2, y_size);
+	if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+		return cudaStatus;
+
+	if (cudaSuccess != (cudaStatus = cycle_transpose<32u, 8u>(f_prev, f_curr, f_tmp, x_size, y_size, matrix_shift)))
+		return cudaStatus;
+
+	blockDim = 1; threads = y_size - 2;
+	iki::diffusion::device::correction_step_multisolver_kernel<<<blockDim, threads>>>(*f_prev, *f_curr, y_dfc, a, b, c, d, ry, y_size - 2, x_size);
+	if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+		return cudaStatus;
+
+	iki::math::device::thomson_multisolver_kernell<<<blockDim, threads>>>(a, b, c, d, *f_curr, y_size - 2, x_size);
+	if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+		return cudaStatus;
+
+	if (cudaSuccess != (cudaStatus = cycle_transpose<32u, 8u>(f_prev, f_curr, f_tmp, y_size, x_size, matrix_shift)))
+		return cudaStatus;
+
+	std::swap(*f_prev, *f_curr);
+	return cudaStatus;
+}
+
 int main() {
 	using namespace std;
 	using namespace iki;
-	
-	/**
-	 * Loop over...
-	 * ForwardCalculationKernell -> ThomsonKernell -> TransposeKernell -> CorrectionCalculationKernell -> ThomsonKernell -> TransposeKernell
-	 */
 
 	cudaError_t cudaStatus;
 	float *gm_dev = NULL;
-	size_t x_size = 1024, y_size = 1024;
+	size_t x_size = 64, y_size = 64;
 	vector<float> f(x_size * y_size), x_diffusion(x_size * y_size), y_diffusion(x_size * y_size);
 	initial_value(f, x_size, y_size); initial_x_dfc(x_diffusion, x_size, y_size); initial_y_dfc(y_diffusion, x_size, y_size);
 	float rx = 1.0f, ry = 1.0f;
@@ -128,60 +157,14 @@ int main() {
 		size_t matrix_size = x_size * y_size, matrix_shift = y_size + 1;
 		float *f_prev = gm_dev + y_size + 1, *f_curr = f_prev + matrix_size, *f_tmp = f_curr + matrix_size, *x_dfc = f_tmp + matrix_size, *y_dfc = x_dfc + matrix_size, *a = y_dfc + matrix_size, *b = a + matrix_size, *c = b + matrix_size, *d = c + matrix_size;
 
-		int blockDim = 1, threads = x_size - 2;
 		auto begin = chrono::steady_clock::now(), end = begin;
 		for (int count = 0; count != 1000; ++count) {
-			diffusion::device::forward_step_multisolver_kernel<<<blockDim, threads>>>(f_prev, x_dfc, y_dfc, a, b, c, d, rx, ry, x_size - 2, y_size, x_size );
-			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
-				cerr << "On iteration " << count << " forward step calculation kernel launch failed!" << endl;
+			if (cudaSuccess != (cudaStatus = iteration_step(&f_prev, &f_curr, &f_tmp, x_dfc, y_dfc, a, b, c, d, rx, ry, x_size, y_size))) {
+				cerr << "On iteration " << count << " step kernell failed: " << endl;
 				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 				cudaDeviceSynchronize();
 				goto Clear;
 			}
-
-			math::device::thomson_multisolver_kernell<<<blockDim, threads>>>(a, b, c, d, f_curr, x_size - 2, y_size);
-			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
-				cerr << "On iteration " << count << " forward step thomson solver kernel launch failed!" << endl;
-				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-				cudaDeviceSynchronize();
-				goto Clear;
-			}
-
-			{
-				if (cudaSuccess != (cudaStatus = cycle_transpose<32u,8u>(&f_prev,&f_curr,&f_tmp,x_size,y_size,matrix_shift))) {
-					cerr << "On iteration " << count << " transposition after forward step failed!" << endl;
-					cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-					cudaDeviceSynchronize();
-					goto Clear;
-				}
-			}
-			
-			diffusion::device::correction_step_multisolver_kernel<<<blockDim,threads>>>(f_prev, f_curr, y_dfc, a, b, c, d, ry, y_size-2, x_size);
-			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
-				cerr << "On iteration " << count << " correction step calculation kernel launch failed!" << endl;
-				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-				cudaDeviceSynchronize();
-				goto Clear;
-			}
-
-			math::device::thomson_multisolver_kernell<<<blockDim,threads>>>(a, b, c, d, f_curr, y_size - 2, x_size);
-			if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
-				cerr << "On iteration " << count << "correction step thomson solver kernel launch failed!" << endl;
-				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-				cudaDeviceSynchronize();
-				goto Clear;
-			}
-
-			{
-				if (cudaSuccess != (cudaStatus = cycle_transpose<32u, 8u>(&f_prev, &f_curr, &f_tmp, y_size, x_size, matrix_shift))) {
-					cerr << "On iteration " << count << " transposition after forward step failed!" << endl;
-					cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-					cudaDeviceSynchronize();
-					goto Clear;
-				}
-			}
-			
-			swap(f_prev, f_curr);
 		}
 		cudaDeviceSynchronize();
 		end = chrono::steady_clock::now();
@@ -195,8 +178,8 @@ int main() {
 		else {
 			ofstream ascii_out("./data/matrix.txt");
 			ascii_out.precision(7); ascii_out.setf(ios::fixed, ios::floatfield);
+			for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
 			for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
-				for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
 					ascii_out << x_idx << " " << y_idx << " " << f[x_idx * y_size + y_idx] << endl;
 		}
 	}
