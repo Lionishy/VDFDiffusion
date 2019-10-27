@@ -20,6 +20,7 @@
     <ClInclude Include="ThomsonSolver.cuh" />
     <ClInclude Include="ThomsonSolverKernel.cuh" />
     <ClInclude Include="Transpose.cuh" />
+    <ClInclude Include="TwoDimensionalDeviceSolver.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="TwoDimensionalDiffusionTest.cu" />
