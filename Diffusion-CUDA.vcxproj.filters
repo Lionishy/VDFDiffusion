@@ -39,6 +39,9 @@
     <ClInclude Include="TwoDimensionalDeviceSolver.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
+    <ClInclude Include="CyclicGridsTranspose.cuh">
+      <Filter>Diffusion</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="TwoDimensionalDiffusionTest.cu" />
