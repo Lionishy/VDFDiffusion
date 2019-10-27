@@ -12,34 +12,31 @@
 #include <vector>
 #include <chrono>
 #include <utility>
+#include <cmath>
 
 template <typename T>
-void initial_value(std::vector<T> &f, size_t x_size, size_t y_size) {
-	T grad = T(1) / (y_size-1);
+void initial_sin_wave(std::vector<T> &f, size_t x_size, size_t y_size, int N) {
+	auto const PI = T(3.14159265358979323);
 	for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
-		for (size_t x_idx = 0; x_idx != x_size; ++x_idx) {
-			f[x_idx*y_size + y_idx] = T(1) - grad * y_idx;
-		}
+		for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
+			f[x_idx * y_size + y_idx] = std::sin((PI * N) / (x_size-1)*x_idx);
 }
 
 template <typename T>
 void initial_x_dfc(std::vector<T> &dfc, size_t x_size, size_t y_size) {
-	for (size_t y_idx = 1; y_idx != y_size-2; ++y_idx)
-		for (size_t x_idx = 1; x_idx != x_size - 2; ++x_idx)
+	for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
+		for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
 			dfc[y_idx + x_idx * y_size] = T(1);
 }
 
 template <typename T>
 void initial_y_dfc(std::vector<T> &dfc, size_t x_size, size_t y_size) {
 	for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
-		dfc[y_idx] = dfc[(x_size - 1) * y_size + y_idx] = T(0);
+		dfc[y_idx] = dfc[y_idx + (x_size - 2) * y_size] = T(0);
 
-	for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
-		dfc[x_idx * y_size] = dfc[y_size - 1 + x_idx * y_size] = T(0);
-
-	for (size_t x_idx = 1; x_idx != x_size - 1; ++x_idx)
-		for (size_t y_idx = 1; y_idx != y_size - 1; ++y_idx)
-			dfc[x_idx * y_size + y_idx] = T(1);
+	for (size_t x_idx = 1; x_idx != x_size-2; ++x_idx)
+		for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
+			dfc[y_idx + x_idx * y_size] = T(1);
 }
 
 template <unsigned tile_dim, unsigned block_rows, typename T>
@@ -109,9 +106,9 @@ int main() {
 
 	cudaError_t cudaStatus;
 	float *gm_dev = NULL;
-	size_t x_size = 64, y_size = 64;
+	size_t x_size = 1024, y_size = 1024;
 	vector<float> f(x_size * y_size), x_diffusion(x_size * y_size), y_diffusion(x_size * y_size);
-	initial_value(f, x_size, y_size); initial_x_dfc(x_diffusion, x_size, y_size); initial_y_dfc(y_diffusion, x_size, y_size);
+	initial_sin_wave(f, x_size, y_size, 8); initial_x_dfc(x_diffusion, x_size, y_size); initial_y_dfc(y_diffusion, y_size, x_size);
 	float rx = 1.0f, ry = 1.0f;
 
 	if (cudaSuccess != (cudaStatus = cudaSetDevice(0))) {
@@ -158,7 +155,7 @@ int main() {
 		float *f_prev = gm_dev + y_size + 1, *f_curr = f_prev + matrix_size, *f_tmp = f_curr + matrix_size, *x_dfc = f_tmp + matrix_size, *y_dfc = x_dfc + matrix_size, *a = y_dfc + matrix_size, *b = a + matrix_size, *c = b + matrix_size, *d = c + matrix_size;
 
 		auto begin = chrono::steady_clock::now(), end = begin;
-		for (int count = 0; count != 1000; ++count) {
+		for (int count = 0; count != 10000; ++count) {
 			if (cudaSuccess != (cudaStatus = iteration_step(&f_prev, &f_curr, &f_tmp, x_dfc, y_dfc, a, b, c, d, rx, ry, x_size, y_size))) {
 				cerr << "On iteration " << count << " step kernell failed: " << endl;
 				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
@@ -178,8 +175,8 @@ int main() {
 		else {
 			ofstream ascii_out("./data/matrix.txt");
 			ascii_out.precision(7); ascii_out.setf(ios::fixed, ios::floatfield);
-			for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
 			for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
+				for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
 					ascii_out << x_idx << " " << y_idx << " " << f[x_idx * y_size + y_idx] << endl;
 		}
 	}
