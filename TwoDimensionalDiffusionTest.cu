@@ -100,94 +100,57 @@ cudaError_t iteration_step(T **f_prev, T **f_curr, T **f_tmp, T *x_dfc, T *y_dfc
 	return cudaStatus;
 }
 
+#include "TwoDimensionalDeviceSolver.cuh"
+
 int main() {
 	using namespace std;
 	using namespace iki;
 
 	cudaError_t cudaStatus;
-	float *gm_dev = NULL;
-	size_t x_size = 1024, y_size = 1024;
-	vector<float> f(x_size * y_size), x_diffusion(x_size * y_size), y_diffusion(x_size * y_size);
-	initial_sin_wave(f, x_size, y_size, 8); initial_x_dfc(x_diffusion, x_size, y_size); initial_y_dfc(y_diffusion, y_size, x_size);
-	float rx = 1.0f, ry = 1.0f;
-
 	if (cudaSuccess != (cudaStatus = cudaSetDevice(0))) {
 		cerr << "Error in starting cuda device: " << endl;
 		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 		goto End;
 	}
 
-	if (cudaSuccess != (cudaStatus = cudaMalloc((void **)&gm_dev, 9 * x_size * y_size * sizeof(float)))) {
-		cerr << "Can't allocate global device memory of " << (9*x_size*y_size*sizeof(float)/1024) << " Kb: " << endl;
-		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-		goto Clear;
-	}
-	else {
-		cerr << (9 * x_size * y_size * sizeof(float) / 1024) << " Kb: " << " successfully allocated!" << endl;
-	}
-
-	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev, f.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
-		cerr << "Can't copy data from f to device:" << endl;
-		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-		goto Clear;
-	}
-
-	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + x_size * y_size, f.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
-		cerr << "Can't copy data from f to device:" << endl;
-		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-		goto Clear;
-	}
-
-	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + 3 * x_size * y_size, x_diffusion.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
-		cout << "Can't copy data from x_dfc to device:" << endl;
-		cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-		goto Clear;
-	}
-
-	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + 4 * x_size * y_size, y_diffusion.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
-		cerr << "Can't copy data from y_dfc to device:" << endl;
-		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-		goto Clear;
-	}
-
 	{
-		size_t matrix_size = x_size * y_size, matrix_shift = y_size + 1;
-		float *f_prev = gm_dev + y_size + 1, *f_curr = f_prev + matrix_size, *f_tmp = f_curr + matrix_size, *x_dfc = f_tmp + matrix_size, *y_dfc = x_dfc + matrix_size, *a = y_dfc + matrix_size, *b = a + matrix_size, *c = b + matrix_size, *d = c + matrix_size;
+		size_t x_size = 1024, y_size = 1024;
+		vector<float> f(x_size * y_size); initial_sin_wave(f, x_size, y_size, 2);
+		vector<float> xx_dfc(x_size * y_size); initial_x_dfc(xx_dfc, x_size, y_size);
+		vector<float> yy_dfc(x_size * y_size); initial_y_dfc(yy_dfc, y_size, x_size);
 
-		auto begin = chrono::steady_clock::now(), end = begin;
-		for (int count = 0; count != 10000; ++count) {
-			if (cudaSuccess != (cudaStatus = iteration_step(&f_prev, &f_curr, &f_tmp, x_dfc, y_dfc, a, b, c, d, rx, ry, x_size, y_size))) {
-				cerr << "On iteration " << count << " step kernell failed: " << endl;
-				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+		try {
+			iki::diffusion::TwoDimensionalSolver<float> solver(cerr, x_size, y_size, 1.f, 1.f);
+			solver.init(f.data(), xx_dfc.data(), yy_dfc.data());
+			{
+				auto begin = chrono::steady_clock::now(), end = begin;
+
+				for (size_t count = 0; count != 10000; ++count)
+					solver.step();
+
 				cudaDeviceSynchronize();
-				goto Clear;
+				end = chrono::steady_clock::now();
+				cerr << "Time consumed: " << chrono::duration <double, milli>(end - begin).count() << " ms" << endl;
 			}
+			solver.retrieve(f.data());
 		}
-		cudaDeviceSynchronize();
-		end = chrono::steady_clock::now();
-		cerr << "Time consumed: " << chrono::duration <double, milli>(end - begin).count() << " ms" << endl;
+		catch (std::exception & ex) {
+			cerr << ex.what() << endl;
+		}
 
-		if (cudaSuccess != (cudaStatus = cudaMemcpy(f.data(), f_prev - matrix_shift, x_size*y_size * sizeof(float), cudaMemcpyDeviceToHost))) {
-			cout << "Can't copy data from f_prev to host:" << endl;
-			cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-			goto Clear;
-		}
-		else {
-			ofstream ascii_out("./data/matrix.txt");
+		{
+			std::ofstream ascii_out("./data/matrix.txt");
 			ascii_out.precision(7); ascii_out.setf(ios::fixed, ios::floatfield);
 			for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
 				for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
-					ascii_out << x_idx << " " << y_idx << " " << f[x_idx * y_size + y_idx] << endl;
+					ascii_out << x_idx << " " << y_idx << " " << f[x_idx * y_size + y_idx] << '\n';
 		}
 	}
 
-Clear:
-	if (NULL != gm_dev) cudaFree(gm_dev);
+End:
 	if (cudaSuccess != (cudaStatus = cudaDeviceReset())) {
 		cerr << "Error in device process termination: " << endl;
 		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 	}
-
-End:
 	return 0;
 }
