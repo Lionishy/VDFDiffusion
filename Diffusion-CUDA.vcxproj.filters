@@ -48,6 +48,9 @@
     <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
+    <ClInclude Include="ForwardStepCorrectionKernell.cuh">
+      <Filter>Diffusion</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="TwoDimensionalDiffusionTest.cu" />
