@@ -120,8 +120,8 @@ int main() {
 		vector<float> yy_dfc(x_size * y_size); initial_y_dfc(yy_dfc, y_size, x_size);
 
 		try {
-			iki::diffusion::TwoDimensionalSolver<float> solver(cerr, x_size, y_size, 1.f, 1.f);
-			solver.init(f.data(), xx_dfc.data(), yy_dfc.data());
+			iki::diffusion::TwoDimensionalSolver<float> solver(cerr, x_size, y_size, 1.f, 1.f, 1.f);
+			solver.init(f.data(), xx_dfc.data(), yy_dfc.data(), yy_dfc.data(), yy_dfc.data());
 			{
 				auto begin = chrono::steady_clock::now(), end = begin;
 
