@@ -72,11 +72,10 @@ namespace iki { namespace diffusion {
 			from_device_to_host(f_host, f_prev, matrix_size * sizeof(T));
 		}
 
-		void step() {
+		void forward_step() {
 			cudaError_t cudaStatus;
-			int blockDim, threads;
+			int blockDim = 1, threads = x_size - 2;
 
-			blockDim = 1, threads = x_size - 2;
 			device::forward_step_multisolver_kernel<<<blockDim, threads>>>(f_prev_grid, xx_dfc, yy_dfc, xy_dfc, yx_dfc, a, b, c, d, rx, ry, rxy, x_size - 2, y_size, x_size);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
 				throw cuda_error_construct(cudaStatus, "Forward step matrix calculation");
@@ -84,14 +83,12 @@ namespace iki { namespace diffusion {
 			math::device::thomson_multisolver_kernell<<<blockDim, threads>>>(a, b, c, d, f_curr_grid, x_size - 2, y_size);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
 				throw cuda_error_construct(cudaStatus, "Forward step Thomson solver");
+		}
 
-			if (cudaSuccess != (cudaStatus = cyclic_grids_transpose<32u, 8u>(f_prev, f_curr, f_tmp, x_size, y_size)))
-				throw cuda_error_construct(cudaStatus, "Forward step grid transpose");
-			std::swap(f_prev, f_curr);
-			std::swap(f_curr, f_tmp);
-			grid_pointers_calculation(x_size + 1);
+		void correction_step() {
+			cudaError_t cudaStatus;
+			int blockDim = 1, threads = y_size - 2;
 
-			blockDim = 1; threads = y_size - 2;
 			device::correction_step_multisolver_kernel<<<blockDim, threads>>>(f_prev_grid, f_curr_grid, yy_dfc, a, b, c, d, ry, y_size - 2, x_size);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
 				throw cuda_error_construct(cudaStatus, "Correction step matrix calculation");
@@ -99,12 +96,35 @@ namespace iki { namespace diffusion {
 			math::device::thomson_multisolver_kernell<<<blockDim, threads>>>(a, b, c, d, f_curr_grid, y_size - 2, x_size);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
 				throw cuda_error_construct(cudaStatus, "Correction step Thomson solver");
+		}
+
+		void x_to_y_transpose(std::string const &action) {
+			cudaError_t cudaStatus;
+
+			if (cudaSuccess != (cudaStatus = cyclic_grids_transpose<32u, 8u>(f_prev, f_curr, f_tmp, x_size, y_size)))
+				throw cuda_error_construct(cudaStatus, action);
+			std::swap(f_prev, f_curr);
+			std::swap(f_curr, f_tmp);
+			grid_pointers_calculation(x_size + 1);
+		}
+
+		void y_to_x_transpose(std::string const &action) {
+			cudaError_t cudaStatus;
 
 			if (cudaSuccess != (cudaStatus = cyclic_grids_transpose<32u, 8u>(f_prev, f_curr, f_tmp, y_size, x_size)))
-				throw cuda_error_construct(cudaStatus, "Correction step grid transpose");
+				throw cuda_error_construct(cudaStatus, action);
 			std::swap(f_prev, f_curr);
 			std::swap(f_curr, f_tmp);
 			grid_pointers_calculation(y_size + 1);
+		}
+
+		void step() {
+			
+			forward_step();
+			x_to_y_transpose("Forward step grid transpose");
+
+			correction_step();
+			y_to_x_transpose("Correction step grid transpose");
 
 			std::swap(f_prev, f_curr);
 		}

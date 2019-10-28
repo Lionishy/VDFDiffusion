@@ -36,7 +36,7 @@ void initial_y_dfc(std::vector<T> &dfc, size_t x_size, size_t y_size) {
 
 	for (size_t x_idx = 1; x_idx != x_size-2; ++x_idx)
 		for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
-			dfc[y_idx + x_idx * y_size] = T(1);
+			dfc[y_idx + x_idx * y_size] = T(0);
 }
 
 template <unsigned tile_dim, unsigned block_rows, typename T>
