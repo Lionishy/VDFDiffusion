@@ -34,7 +34,7 @@ namespace iki { namespace diffusion {
 				throw cuda_error_construct(cudaStatus, "Copying data from host to device");
 		}
 
-		TwoDimensionalSolver(std::ostream &debug_stream, size_t x_size, size_t y_size, T rx, T ry): debug_stream(debug_stream), x_size(x_size), y_size(y_size), rx(rx), ry(ry), matrix_size(x_size*y_size), global_device_memory(NULL) {
+		TwoDimensionalSolver(std::ostream &debug_stream, size_t x_size, size_t y_size, T rx, T ry, T rxy): debug_stream(debug_stream), x_size(x_size), y_size(y_size), rx(rx), ry(ry), rxy(rxy), matrix_size(x_size*y_size), global_device_memory(NULL) {
 			size_t bytes = 3 * x_size * y_size * sizeof(T) + 4 * x_size * y_size * sizeof(T) + 4 * x_size * y_size * sizeof(T);
 			cudaError_t cudaStatus;
 			if (cudaSuccess != (cudaStatus = cudaMalloc(&global_device_memory, bytes)))	{
@@ -59,11 +59,13 @@ namespace iki { namespace diffusion {
 			grid_pointers_calculation(x_size + 1);
 		}
 
-		void init(T const *f_host, T const *xx_dfc_host, T const *yy_dfc_host) {
+		void init(T const *f_host, T const *xx_dfc_host, T const *yy_dfc_host, T const *xy_dfc_host, T const *yx_dfc_host) {
 			from_host_to_device(f_prev, f_host, matrix_size * sizeof(T));
 			from_host_to_device(f_curr, f_host, matrix_size * sizeof(T));
 			from_host_to_device(dfc, xx_dfc_host, matrix_size * sizeof(T));
 			from_host_to_device(dfc + matrix_size, yy_dfc_host, matrix_size * sizeof(T));
+			from_host_to_device(dfc + 2 * matrix_size, xy_dfc_host, matrix_size * sizeof(T));
+			from_host_to_device(dfc + 3 * matrix_size, yx_dfc_host, matrix_size * sizeof(T));
 		}
 
 		void retrieve(T *f_host) {
@@ -75,7 +77,7 @@ namespace iki { namespace diffusion {
 			int blockDim, threads;
 
 			blockDim = 1, threads = x_size - 2;
-			device::forward_step_multisolver_kernel<<<blockDim, threads>>>(f_prev_grid, xx_dfc, yy_dfc, a, b, c, d, rx, ry, x_size - 2, y_size, x_size);
+			device::forward_step_multisolver_kernel<<<blockDim, threads>>>(f_prev_grid, xx_dfc, yy_dfc, xy_dfc, yx_dfc, a, b, c, d, rx, ry, rxy, x_size - 2, y_size, x_size);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
 				throw cuda_error_construct(cudaStatus, "Forward step matrix calculation");
 
@@ -126,7 +128,7 @@ namespace iki { namespace diffusion {
 		T *f_prev, *f_curr, *f_tmp, *f_prev_grid, *f_curr_grid;
 		T *dfc, *xx_dfc, *yy_dfc, *xy_dfc, *yx_dfc;
 		T *m, *a, *b, *c, *d;
-		T const rx, ry;
+		T const rx, ry, rxy;
 	};
 } /* diffusion */ } /* iki */
 
