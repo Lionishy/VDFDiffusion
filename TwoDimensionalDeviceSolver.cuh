@@ -3,7 +3,10 @@
 #define TwoDimensionalDeviceSolver_CUH
 
 #include "CyclicGridsTranspose.cuh"
+#include "ForwardStepKernel.cuh"
 #include "ForwardStepCorrectionKernel.cuh"
+#include "CorrectionStepKernel.cuh"
+#include "ThomsonSolverKernel.cuh"
 
 #include <cuda_runtime.h>
 
