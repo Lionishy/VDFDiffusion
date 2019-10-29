@@ -48,7 +48,7 @@
     <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
-    <ClInclude Include="ForwardStepCorrectionKernell.cuh">
+    <ClInclude Include="ForwardStepCorrectionKernel.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
   </ItemGroup>

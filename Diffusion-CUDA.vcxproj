@@ -15,7 +15,7 @@
     <ClInclude Include="CorrectionStepTridiagonalMatrixCalculation.cuh" />
     <ClInclude Include="CyclicGridsTranspose.cuh" />
     <ClInclude Include="DiagonalDiscretization.cuh" />
-    <ClInclude Include="ForwardStepCorrectionKernell.cuh" />
+    <ClInclude Include="ForwardStepCorrectionKernel.cuh" />
     <ClInclude Include="ForwardStepKernel.cuh" />
     <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh" />
     <ClInclude Include="MixedTermDiscretization.cuh" />

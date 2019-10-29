@@ -3,6 +3,7 @@
 #define TwoDimensionalDeviceSolver_CUH
 
 #include "CyclicGridsTranspose.cuh"
+#include "ForwardStepCorrectionKernel.cuh"
 
 #include <cuda_runtime.h>
 
@@ -85,6 +86,23 @@ namespace iki { namespace diffusion {
 				throw cuda_error_construct(cudaStatus, "Forward step Thomson solver");
 		}
 
+		void forward_step_with_mixed_terms_correction() {
+			cudaError_t cudaStatus;
+			int blockDim = 1, threads = x_size - 2;
+
+			device::forward_step_multisolver_kernel<<<blockDim, threads>>>(f_prev_grid, xx_dfc, yy_dfc, xy_dfc, yx_dfc, a, b, c, d, rx, ry, rxy, x_size - 2, y_size, x_size);
+			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+				throw cuda_error_construct(cudaStatus, "Forward step with mixed terms correction matrix calculation");
+
+			device::forward_step_correction_multisolver_kernel<<<blockDim, threads>>>(f_prev_grid, f_curr_grid, xy_dfc, yx_dfc, d, rxy, x_size - 2, y_size, x_size);
+			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+				throw cuda_error_construct(cudaStatus, "Forward step with mixed terms correction free terms correction");
+
+			math::device::thomson_multisolver_kernell<<<blockDim, threads>>>(a, b, c, d, f_curr_grid, x_size - 2, y_size);
+			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+				throw cuda_error_construct(cudaStatus, "Forward step with mixed terms correction Thomson solver");
+		}
+
 		void correction_step() {
 			cudaError_t cudaStatus;
 			int blockDim = 1, threads = y_size - 2;
@@ -125,6 +143,12 @@ namespace iki { namespace diffusion {
 
 			correction_step();
 			y_to_x_transpose("Correction step grid transpose");
+
+			forward_step_with_mixed_terms_correction();
+			x_to_y_transpose("Forward step with mixed terms correction grid transpose");
+
+			correction_step();
+			y_to_x_transpose("Correction step afterm mixed terms correction grid transpose");
 
 			std::swap(f_prev, f_curr);
 		}
