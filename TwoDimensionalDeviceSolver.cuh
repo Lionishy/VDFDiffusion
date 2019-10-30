@@ -147,11 +147,11 @@ namespace iki { namespace diffusion {
 			correction_step();
 			y_to_x_transpose("Correction step grid transpose");
 
-			forward_step_with_mixed_terms_correction();
+			/*forward_step_with_mixed_terms_correction();
 			x_to_y_transpose("Forward step with mixed terms correction grid transpose");
 
 			correction_step();
-			y_to_x_transpose("Correction step afterm mixed terms correction grid transpose");
+			y_to_x_transpose("Correction step afterm mixed terms correction grid transpose");*/
 
 			std::swap(f_prev, f_curr);
 		}
