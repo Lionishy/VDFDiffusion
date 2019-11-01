@@ -14,6 +14,7 @@
     <ClInclude Include="CorrectionStepKernel.cuh" />
     <ClInclude Include="CorrectionStepTridiagonalMatrixCalculation.cuh" />
     <ClInclude Include="DiagonalDiscretization.cuh" />
+    <ClInclude Include="DiffusionTest.h" />
     <ClInclude Include="ForwardStepKernel.cuh" />
     <ClInclude Include="StridedThomsonSolver.cuh" />
     <ClInclude Include="ForwardStepTridiagonalMatrixCalculation.cuh" />

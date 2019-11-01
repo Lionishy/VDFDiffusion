@@ -39,6 +39,7 @@
     <ClInclude Include="TwoDimensionalDeviceSolver.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
+    <ClInclude Include="DiffusionTest.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="TwoDimensionalDiffusionTest.cu" />
