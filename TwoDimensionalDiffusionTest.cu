@@ -23,7 +23,7 @@ template <typename T>
 void initial_x_dfc(std::vector<T> &dfc, size_t x_size, size_t y_size) {
 	for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
 		for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
-			dfc[y_idx + x_idx * y_size] = T(0);
+			dfc[y_idx + x_idx * y_size] = T(1);
 }
 
 template <typename T>
@@ -46,18 +46,18 @@ int main() {
 
 	{
 		size_t x_size = 1024, y_size = 1024;
-		vector<float> f(x_size * y_size); initial_sin_sin_wave(f, x_size, y_size, 1, 1);
-		vector<float> xx_dfc(x_size * y_size); initial_x_dfc(xx_dfc, x_size, y_size);
-		vector<float> yy_dfc(x_size * y_size); initial_y_dfc(yy_dfc, y_size, x_size);
-		vector<float> xy_dfc(x_size * y_size);
+		vector<double> f(x_size * y_size); initial_sin_sin_wave(f, x_size, y_size, 1, 1);
+		vector<double> xx_dfc(x_size * y_size); initial_x_dfc(xx_dfc, x_size, y_size);
+		vector<double> yy_dfc(x_size * y_size); initial_y_dfc(yy_dfc, y_size, x_size);
+		vector<double> xy_dfc(x_size * y_size);
 
 		try {
-			iki::diffusion::TwoDimensionalSolver<float> solver(cerr, x_size, y_size, 0.5f, 0.5f, 1.f);
+			iki::diffusion::TwoDimensionalSolver<double> solver(cerr, x_size, y_size, 0.7f, 0.7f, 1.f);
 			solver.init(f.data(), xx_dfc.data(), yy_dfc.data(), xy_dfc.data(), xy_dfc.data());
 			{
 				auto begin = chrono::steady_clock::now(), end = begin;
 
-				for (size_t count = 0; count != 10000; ++count)
+				for (size_t count = 0; count != 30; ++count)
 					solver.step();
 
 				cudaDeviceSynchronize();
