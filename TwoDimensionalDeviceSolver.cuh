@@ -76,7 +76,7 @@ namespace iki { namespace diffusion {
 			from_device_to_host(f_host, f_prev, matrix_size * sizeof(T));
 		}
 
-		void forward_step() {
+		void forward_step(T *xx_dfc, T *yy_dfc, T *xy_dfc, T *yx_dfc, T rx, T ry, size_t x_size, size_t y_size) {
 			cudaError_t cudaStatus;
 			int blockDim = 1, threads = x_size - 2;
 
@@ -106,7 +106,7 @@ namespace iki { namespace diffusion {
 				throw cuda_error_construct(cudaStatus, "Forward step with mixed terms correction Thomson solver");
 		}
 
-		void correction_step() {
+		void correction_step(T *yy_dfc, T ry, size_t x_size, size_t y_size) {
 			cudaError_t cudaStatus;
 			int blockDim = 1, threads = y_size - 2;
 
@@ -119,7 +119,7 @@ namespace iki { namespace diffusion {
 				throw cuda_error_construct(cudaStatus, "Correction step Thomson solver");
 		}
 
-		void x_to_y_transpose(std::string const &action) {
+		void transpose(std::string const &action, size_t x_size, size_t y_size) {
 			cudaError_t cudaStatus;
 
 			if (cudaSuccess != (cudaStatus = cyclic_grids_transpose<32u, 8u>(f_prev, f_curr, f_tmp, x_size, y_size)))
@@ -129,23 +129,18 @@ namespace iki { namespace diffusion {
 			grid_pointers_calculation(x_size + 1);
 		}
 
-		void y_to_x_transpose(std::string const &action) {
-			cudaError_t cudaStatus;
-
-			if (cudaSuccess != (cudaStatus = cyclic_grids_transpose<32u, 8u>(f_prev, f_curr, f_tmp, y_size, x_size)))
-				throw cuda_error_construct(cudaStatus, action);
-			std::swap(f_prev, f_curr);
-			std::swap(f_curr, f_tmp);
-			grid_pointers_calculation(y_size + 1);
-		}
-
 		void step() {
-			
-			forward_step();
-			x_to_y_transpose("Forward step grid transpose");
+			forward_step(xx_dfc, yy_dfc, xy_dfc, yx_dfc, rx, ry, x_size, y_size);
+			transpose("Forward step grid transpose", x_size, y_size);
 
-			correction_step();
-			y_to_x_transpose("Correction step grid transpose");
+			correction_step(yy_dfc, ry, x_size, y_size);
+
+			std::swap(f_prev, f_curr);
+			
+			forward_step(yy_dfc, xx_dfc, yx_dfc, xy_dfc, ry, rx, y_size, x_size);
+			transpose("Forward step grid transpose", y_size, x_size);
+
+			correction_step(xx_dfc, rx, y_size, x_size);
 
 			/*forward_step_with_mixed_terms_correction();
 			x_to_y_transpose("Forward step with mixed terms correction grid transpose");
