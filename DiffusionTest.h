@@ -23,7 +23,7 @@ namespace iki {	namespace diffusion {
 
 		{
 			for (size_t y_idx = 1; y_idx != y_size-2; ++y_idx)
-				for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
+				for (size_t x_idx = 1; x_idx != x_size-2; ++x_idx)
 					y_dfc[y_idx + x_idx * y_size] = T(1);
 		}
 	}
@@ -39,7 +39,7 @@ namespace iki {	namespace diffusion {
 
 		{
 			for (size_t y_idx = 1; y_idx != y_size-2; ++y_idx)
-				for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
+				for (size_t x_idx = 1; x_idx != x_size-2; ++x_idx)
 					x_dfc[y_idx + x_idx * y_size] = T(1);
 		}
 
