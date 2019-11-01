@@ -2,6 +2,7 @@
 #include "CorrectionStepKernel.cuh"
 #include "ThomsonSolverKernel.cuh"
 #include "Transpose.cuh"
+#include "DiffusionTest.h"
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
@@ -13,36 +14,6 @@
 #include <chrono>
 #include <utility>
 #include <cmath>
-
-template <typename T>
-void initial_sin_wave(std::vector<T> &f, size_t x_size, size_t y_size, int N) {
-	auto const PI = T(3.14159265358979323);
-	for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
-		for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
-			f[x_idx * y_size + y_idx] = std::sin((PI * N) / (x_size-1)*x_idx);
-}
-
-template <typename T>
-void initial_y_slope(std::vector<T> &f, size_t x_size, size_t y_size) {
-	T grad = T(1) / (y_size - 1);
-	for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
-		for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
-			f[x_idx * y_size + y_idx] = T(1) - grad * y_idx;
-}
-
-template <typename T>
-void initial_x_dfc(std::vector<T> &dfc, size_t x_size, size_t y_size) {
-	for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
-		for (size_t x_idx = 1; x_idx != x_size-2; ++x_idx)
-			dfc[y_idx + x_idx * y_size] = T(1);
-}
-
-template <typename T>
-void initial_y_dfc(std::vector<T> &dfc, size_t x_size, size_t y_size) {
-	for (size_t x_idx = 1; x_idx != x_size; ++x_idx)
-		for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
-			dfc[y_idx + x_idx * y_size] = T(1);
-}
 
 template <unsigned tile_dim, unsigned block_rows, typename T>
 cudaError_t cycle_transpose(T **f_prev, T **f_curr, T **f_tmp, size_t x_size, size_t y_size, size_t &matrix_shift) {
@@ -113,7 +84,8 @@ int main() {
 	float *gm_dev = NULL;
 	size_t x_size = 1024, y_size = 1024;
 	vector<float> f(x_size * y_size), x_diffusion(x_size * y_size), y_diffusion(x_size * y_size);
-	initial_y_slope(f, x_size, y_size); initial_x_dfc(x_diffusion, x_size, y_size); initial_y_dfc(y_diffusion, y_size, x_size);
+	diffusion::x_y_sin_sin_test(f, x_diffusion, y_diffusion, x_size, y_size,1,1);
+
 	float rx = 10.0f, ry = 10.0f;
 
 	if (cudaSuccess != (cudaStatus = cudaSetDevice(0))) {
@@ -160,7 +132,7 @@ int main() {
 		float *f_prev = gm_dev + y_size + 1, *f_curr = f_prev + matrix_size, *f_tmp = f_curr + matrix_size, *x_dfc = f_tmp + matrix_size, *y_dfc = x_dfc + matrix_size, *a = y_dfc + matrix_size, *b = a + matrix_size, *c = b + matrix_size, *d = c + matrix_size;
 
 		auto begin = chrono::steady_clock::now(), end = begin;
-		for (int count = 0; count != 10000; ++count) {
+		for (int count = 0; count != 1000; ++count) {
 			if (cudaSuccess != (cudaStatus = iteration_step(&f_prev, &f_curr, &f_tmp, x_dfc, y_dfc, a, b, c, d, rx, ry, x_size, y_size))) {
 				cerr << "On iteration " << count << " step kernell failed: " << endl;
 				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
