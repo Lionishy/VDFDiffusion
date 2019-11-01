@@ -23,18 +23,23 @@ void initial_sin_wave(std::vector<T> &f, size_t x_size, size_t y_size, int N) {
 }
 
 template <typename T>
-void initial_x_dfc(std::vector<T> &dfc, size_t x_size, size_t y_size) {
+void initial_y_slope(std::vector<T> &f, size_t x_size, size_t y_size) {
+	T grad = T(1) / (y_size - 1);
 	for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
 		for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
+			f[x_idx * y_size + y_idx] = T(1) - grad * y_idx;
+}
+
+template <typename T>
+void initial_x_dfc(std::vector<T> &dfc, size_t x_size, size_t y_size) {
+	for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
+		for (size_t x_idx = 1; x_idx != x_size-2; ++x_idx)
 			dfc[y_idx + x_idx * y_size] = T(1);
 }
 
 template <typename T>
 void initial_y_dfc(std::vector<T> &dfc, size_t x_size, size_t y_size) {
-	for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
-		dfc[y_idx] = dfc[y_idx + (x_size - 2) * y_size] = T(0);
-
-	for (size_t x_idx = 1; x_idx != x_size-2; ++x_idx)
+	for (size_t x_idx = 1; x_idx != x_size; ++x_idx)
 		for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
 			dfc[y_idx + x_idx * y_size] = T(1);
 }
@@ -108,8 +113,8 @@ int main() {
 	float *gm_dev = NULL;
 	size_t x_size = 1024, y_size = 1024;
 	vector<float> f(x_size * y_size), x_diffusion(x_size * y_size), y_diffusion(x_size * y_size);
-	initial_sin_wave(f, x_size, y_size, 8); initial_x_dfc(x_diffusion, x_size, y_size); initial_y_dfc(y_diffusion, y_size, x_size);
-	float rx = 1.0f, ry = 1.0f;
+	initial_y_slope(f, x_size, y_size); initial_x_dfc(x_diffusion, x_size, y_size); initial_y_dfc(y_diffusion, y_size, x_size);
+	float rx = 10.0f, ry = 10.0f;
 
 	if (cudaSuccess != (cudaStatus = cudaSetDevice(0))) {
 		cerr << "Error in starting cuda device: " << endl;
@@ -175,8 +180,9 @@ int main() {
 		else {
 			ofstream ascii_out("./data/matrix.txt");
 			ascii_out.precision(7); ascii_out.setf(ios::fixed, ios::floatfield);
-			for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
+			
 				for (size_t x_idx = 0; x_idx != x_size; ++x_idx)
+					for (size_t y_idx = 0; y_idx != y_size; ++y_idx)
 					ascii_out << x_idx << " " << y_idx << " " << f[x_idx * y_size + y_idx] << endl;
 		}
 	}
