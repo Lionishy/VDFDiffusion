@@ -20,7 +20,7 @@ int main() {
 	float *gm_dev = NULL;
 	size_t x_size = 512, y_size = 512;
 	vector<float> f(x_size * y_size), x_diffusion(x_size * y_size), y_diffusion(x_size * y_size);
-	diffusion::x_y_sin_sin_test(f, x_diffusion, y_diffusion, x_size, y_size,1,1);
+	diffusion::x_y_sin_sin_test(f, x_diffusion, y_diffusion, x_size, y_size, 1, 1);
 
 	float rx = 10.0f, ry = 10.0f;
 
