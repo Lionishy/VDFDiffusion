@@ -65,9 +65,10 @@ int main() {
 
 	{
 		size_t matrix_size = x_size * y_size, matrix_shift = y_size + 1;
-		float *f_prev = gm_dev + y_size + 1, *f_curr = f_prev + matrix_size, *f_tmp = f_curr + matrix_size, *x_dfc = f_tmp + matrix_size, *y_dfc = x_dfc + matrix_size, *a = y_dfc + matrix_size, *b = a + matrix_size, *c = b + matrix_size, *d = c + matrix_size;
+		float *f_prev = gm_dev, *f_curr = f_prev + matrix_size, *f_tmp = f_curr + matrix_size, 
+			*x_dfc = f_tmp + matrix_size, *y_dfc = x_dfc + matrix_size, *a = y_dfc + matrix_size, *b = a + matrix_size, *c = b + matrix_size, *d = c + matrix_size;
 
-		iki::diffusion::TwoDimensionalSolver<float> solver(x_size, y_size, rx, ry, f_prev, f_curr, f_tmp, x_dfc, y_dfc, a, b, c, d);
+		iki::diffusion::TwoDimensionalSolver<float> solver(x_size, y_size, rx, ry, f_prev, f_curr, f_tmp, x_dfc + y_size + 1, y_dfc + x_size + 1, a, b, c, d);
 
 		auto begin = chrono::steady_clock::now(), end = begin;
 		for (int count = 0; count != 1000; ++count) {
@@ -82,7 +83,7 @@ int main() {
 		end = chrono::steady_clock::now();
 		cerr << "Time consumed: " << chrono::duration <double, milli>(end - begin).count() << " ms" << endl;
 
-		if (cudaSuccess != (cudaStatus = cudaMemcpy(f.data(), f_prev - matrix_shift, x_size*y_size * sizeof(float), cudaMemcpyDeviceToHost))) {
+		if (cudaSuccess != (cudaStatus = cudaMemcpy(f.data(), f_prev, x_size*y_size * sizeof(float), cudaMemcpyDeviceToHost))) {
 			cout << "Can't copy data from f_prev to host:" << endl;
 			cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 			goto Clear;

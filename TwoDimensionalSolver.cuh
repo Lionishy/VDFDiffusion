@@ -12,13 +12,14 @@
 namespace iki { namespace diffusion {
 	template <typename T>
 	struct TwoDimensionalSolver final {
-		TwoDimensionalSolver(size_t x_size, size_t y_size, T rx, T ry, T *f_prev, T *f_curr, T *f_tmp, T *x_dfc, T *y_dfc, T *a, T *b, T *c, T *d): x_size(x_size), y_size(y_size), rx(rx), ry(ry), f_prev(f_prev), f_curr(f_curr), f_tmp(f_tmp), x_dfc(x_dfc), y_dfc(y_dfc), a(a), b(b), c(c), d(d) {
+		TwoDimensionalSolver(size_t x_size, size_t y_size, T rx, T ry, T *f_prev_full, T *f_curr_full, T *f_tmp_full, T *x_dfc, T *y_dfc, T *a, T *b, T *c, T *d): x_size(x_size), y_size(y_size), rx(rx), ry(ry), f_prev_full(f_prev_full), f_curr_full(f_curr_full), f_tmp_full(f_tmp_full), x_dfc(x_dfc), y_dfc(y_dfc), a(a), b(b), c(c), d(d) {
+			f_prev = f_prev_full + y_size + 1;
+			f_curr = f_curr_full + y_size + 1;
+			f_tmp = f_tmp_full + y_size + 1;
 		}
 
 		cudaError_t cycle_transpose(size_t x_size, size_t y_size) {
 			cudaError_t cudaStatus;
-
-			float *f_prev_full = f_prev - y_size - 1, *f_curr_full = f_curr - y_size - 1, *f_tmp_full = f_tmp - y_size - 1;
 			if (cudaSuccess != (cudaStatus = iki::diffusion::cyclic_grids_transpose<32u, 8u>(f_prev_full, f_curr_full, f_tmp_full, x_size, y_size))) {
 				return cudaStatus;
 			}
@@ -80,12 +81,14 @@ namespace iki { namespace diffusion {
 			if (cudaSuccess != (cudaStatus = cycle_transpose(y_size, x_size)))
 				return cudaStatus;
 
+			std::swap(f_prev_full, f_curr_full);
 			std::swap(f_prev, f_curr);
 			return cudaStatus;
 		}
 
-		size_t x_size, y_size;
-		T rx, ry;
+		size_t const x_size, y_size;
+		T const rx, ry;
+		T *f_prev_full, *f_curr_full, *f_tmp_full;
 		T *f_prev, *f_curr, *f_tmp;
 		T *x_dfc, *y_dfc;
 		T *a, *b, *c, *d;
