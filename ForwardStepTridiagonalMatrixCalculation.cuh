@@ -18,7 +18,7 @@ namespace iki { namespace diffusion { namespace device {
 			+ ry * diagonal_discretization(f[-1], f[0], f[1], y_dfc[-y_stride], y_dfc[0])
 			+ rxy * (
 				mixed_term_discretization(f[-(int)x_stride - 1], f[-1], f[x_stride - 1], f[-(int)x_stride + 1], f[1], f[x_stride + 1],  xy_dfc[-(int)x_stride], xy_dfc[0])
-				+ mixed_tem_discretization(f[-(int)x_stride - 1], f[-(int)x_stride], f[-(int)x_stride + 1], f[x_stride - 1], f[x_stride], f[x_stride + 1])
+				+ mixed_term_discretization(f[-(int)x_stride - 1], f[-(int)x_stride], f[-(int)x_stride + 1], f[x_stride - 1], f[x_stride], f[x_stride + 1], yx_dfc[-(int)y_stride], yx_dfc[0])
 			);
 
 		for (size_t idx = 1; idx != size - 1; ++idx) {
@@ -31,7 +31,7 @@ namespace iki { namespace diffusion { namespace device {
 				+ ry * diagonal_discretization(f[stride_idx - 1], f[stride_idx], f[stride_idx + 1], y_dfc[idx - y_stride], y_dfc[idx])
 				+ rxy * (
 					mixed_term_discretization(f[stride_prev - 1], f[stride_idx - 1], f[stride_next - 1], f[stride_prev + 1], f[stride_idx + 1], f[stride_next + 1], xy_dfc[stride_prev], xy_dfc[stride_idx])
-					+ mixed_tem_discretization(f[stride_prev - 1], f[stride_prev], f[stride_prev + 1], f[stride_next - 1], f[stride_next], f[stride_next + 1], yx_dfc[idx - y_stride], yx_dfc[idx])
+					+ mixed_term_discretization(f[stride_prev - 1], f[stride_prev], f[stride_prev + 1], f[stride_next - 1], f[stride_next], f[stride_next + 1], yx_dfc[idx - y_stride], yx_dfc[idx])
 				);
 		}
 
@@ -45,7 +45,7 @@ namespace iki { namespace diffusion { namespace device {
 				+ ry * diagonal_discretization(f[stride_idx - 1], f[stride_idx], f[stride_idx + 1], y_dfc[size - 1 - y_stride], y_dfc[size - 1])
 				+ rxy * (
 					mixed_term_discretization(f[stride_prev - 1], f[stride_idx - 1], f[stride_next - 1], f[stride_prev + 1], f[stride_idx + 1], f[stride_next + 1], xy_dfc[stride_prev], xy_dfc[stride_idx])
-					+ mixed_tem_discretization(f[stride_prev - 1], f[stride_prev], f[stride_prev + 1], f[stride_next - 1], f[stride_next], f[stride_next + 1], yx_dfc[size - 1 - y_stride], yx_dfc[size - 1])
+					+ mixed_term_discretization(f[stride_prev - 1], f[stride_prev], f[stride_prev + 1], f[stride_next - 1], f[stride_next], f[stride_next + 1], yx_dfc[size - 1 - y_stride], yx_dfc[size - 1])
 				);
 		}
 	}
