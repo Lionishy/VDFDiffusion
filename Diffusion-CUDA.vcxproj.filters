@@ -55,6 +55,8 @@
     <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
+    <ClInclude Include="DeviceMemory.h" />
+    <ClInclude Include="DeviceException.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="TwoDimensionalDiffusionTest.cu" />
