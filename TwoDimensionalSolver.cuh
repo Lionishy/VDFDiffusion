@@ -6,6 +6,7 @@
 #include "ThomsonSolverKernel.cuh"
 #include "ForwardStepKernel.cuh"
 #include "CorrectionStepKernel.cuh"
+#include "ForwardStepCorrectionKernel.cuh"
 
 #include <cuda_runtime.h>
 
@@ -51,6 +52,25 @@ namespace iki { namespace diffusion {
 			return cudaStatus;
 		}
 
+		cudaError_t forward_step_with_mixed_terms_correction(T *x_dfc, T *y_dfc, T *xy_dfc, T *yx_dfc, T rx, T ry, size_t x_size, size_t y_size) {
+			cudaError_t cudaStatus;
+			int blockDim = 1, threads = x_size - 2;
+
+			device::forward_step_multisolver_kernel<<<blockDim, threads>>>(f_prev, x_dfc, y_dfc, xy_dfc, yx_dfc, a, b, c, d, rx, ry, rxy, x_size - 2, y_size, x_size);
+			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+				return cudaStatus;
+
+			device::forward_step_correction_multisolver_kernel<<<blockDim, threads>>>(f_prev, f_curr, xy_dfc, yx_dfc, d, rxy, x_size - 2, y_size, x_size);
+			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+				return cudaStatus;
+
+			math::device::thomson_multisolver_kernell << <blockDim, threads >> > (a, b, c, d, f_curr, x_size - 2, y_size);
+			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
+				return cudaStatus;
+
+			return cudaStatus;
+		}
+
 		cudaError_t correction_step(T *y_dfc, T ry, size_t x_size, size_t y_size) {
 			cudaError_t cudaStatus;
 			int blockDim = 1, threads = x_size - 2; 
@@ -68,13 +88,28 @@ namespace iki { namespace diffusion {
 
 		cudaError_t step() {
 			cudaError_t cudaStatus;
-
+			//f_prev -> f_curr
 			if (cudaSuccess != (cudaStatus = forward_step(x_dfc, y_dfc, xy_dfc, yx_dfc, rx, ry, x_size, y_size)))
+				return cudaStatus;
+			
+			if (cudaSuccess != (cudaStatus = cycle_transpose(x_size, y_size)))
+				return cudaStatus;
+			
+			//f_prev,f_curr -> f_curr
+			if (cudaSuccess != (cudaStatus = correction_step(y_dfc, ry, x_size, y_size)))
+				return cudaStatus;
+
+			if (cudaSuccess != (cudaStatus = cycle_transpose(y_size, x_size)))
+				return cudaStatus;
+
+			//f_prev,f_curr -> f_curr
+			if (cudaSuccess != (cudaStatus = forward_step_with_mixed_terms_correction(x_dfc, y_dfc, xy_dfc, yx_dfc, rx, ry, x_size, y_size)))
 				return cudaStatus;
 
 			if (cudaSuccess != (cudaStatus = cycle_transpose(x_size, y_size)))
 				return cudaStatus;
 
+			//f_prev,f_curr -> f_curr
 			if (cudaSuccess != (cudaStatus = correction_step(y_dfc, ry, x_size, y_size)))
 				return cudaStatus;
 
