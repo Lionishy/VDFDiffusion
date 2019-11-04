@@ -7,16 +7,46 @@
 #include "ForwardStepKernel.cuh"
 #include "CorrectionStepKernel.cuh"
 #include "ForwardStepCorrectionKernel.cuh"
+#include "DeviceMemory.h"
+#include "DeviceException.h"
 
 #include <cuda_runtime.h>
+#include <vector>
 
 namespace iki { namespace diffusion {
 	template <typename T>
 	struct TwoDimensionalSolver final {
-		TwoDimensionalSolver(size_t x_size, size_t y_size, T rx, T ry, T rxy, T *f_prev_full, T *f_curr_full, T *f_tmp_full, T *x_dfc, T *y_dfc, T *xy_dfc, T *yx_dfc, T *a, T *b, T *c, T *d): x_size(x_size), y_size(y_size), rx(rx), ry(ry), rxy(rxy), f_prev_full(f_prev_full), f_curr_full(f_curr_full), f_tmp_full(f_tmp_full), x_dfc(x_dfc), y_dfc(y_dfc), xy_dfc(xy_dfc), yx_dfc(yx_dfc), a(a), b(b), c(c), d(d) {
-			f_prev = f_prev_full + y_size + 1;
-			f_curr = f_curr_full + y_size + 1;
-			f_tmp = f_tmp_full + y_size + 1;
+		TwoDimensionalSolver(size_t x_size, size_t y_size, T rx, T ry, std::vector<T> const &f, std::vector<T> const &x_dfc_host, std::vector<T> const &y_dfc_host, std::vector<T> const &xy_dfc_host, std::vector<T> const &yx_dfc_host): device_ptr(11 * x_size * y_size * sizeof(T)), x_size(x_size), y_size(y_size), rx(rx), ry(ry), rxy(std::sqrt(rx * ry)) {
+			//pointers assignment
+			{
+				size_t matrix_size = x_size * y_size;
+				f_prev_full = (T*)device_ptr.get();
+				f_curr_full = f_prev_full + matrix_size;
+				f_tmp_full = f_curr_full + matrix_size;
+				x_dfc = f_tmp_full + matrix_size;
+				y_dfc = x_dfc + matrix_size;
+				xy_dfc = y_dfc + matrix_size;
+				yx_dfc = xy_dfc + matrix_size;
+				a = yx_dfc + matrix_size;
+				b = a + matrix_size;
+				c = b + matrix_size;
+				d = c + matrix_size;
+			}
+
+			//initial data copy
+			{
+				cudaError_t cudaStatus;
+				if (cudaSuccess != (cudaStatus = cudaMemcpy(f_prev_full, f.data(), x_size * y_size * sizeof(T), cudaMemcpyHostToDevice))) throw DeviceException(cudaStatus);
+				if (cudaSuccess != (cudaStatus = cudaMemcpy(f_curr_full, f.data(), x_size * y_size * sizeof(T), cudaMemcpyHostToDevice))) throw DeviceException(cudaStatus);
+				if (cudaSuccess != (cudaStatus = cudaMemcpy(x_dfc, x_dfc_host.data(), x_size * y_size * sizeof(T), cudaMemcpyHostToDevice))) throw DeviceException(cudaStatus);
+				if (cudaSuccess != (cudaStatus = cudaMemcpy(y_dfc, y_dfc_host.data(), x_size * y_size * sizeof(T), cudaMemcpyHostToDevice))) throw DeviceException(cudaStatus);
+				if (cudaSuccess != (cudaStatus = cudaMemcpy(xy_dfc, xy_dfc_host.data(), x_size * y_size * sizeof(T), cudaMemcpyHostToDevice))) throw DeviceException(cudaStatus);
+				if (cudaSuccess != (cudaStatus = cudaMemcpy(yx_dfc, yx_dfc_host.data(), x_size * y_size * sizeof(T), cudaMemcpyHostToDevice))) throw DeviceException(cudaStatus);
+			}
+			
+			//main grid pointers shift
+			f_prev = f_prev_full + y_size + 1, f_curr = f_curr_full + y_size + 1, f_tmp = f_tmp_full + y_size + 1;
+			x_dfc += y_size + 1, y_dfc += x_size + 1, xy_dfc += y_size + 1, yx_dfc += x_size + 1;
 		}
 
 		cudaError_t cycle_transpose(size_t x_size, size_t y_size) {
@@ -89,60 +119,21 @@ namespace iki { namespace diffusion {
 		cudaError_t step() {
 			cudaError_t cudaStatus;
 
-			//first iteration x-axis / y-axis
-			//f_prev -> f_curr
-			if (cudaSuccess != (cudaStatus = forward_step(x_dfc, y_dfc, xy_dfc, yx_dfc, rx, ry, x_size, y_size)))
-				return cudaStatus;
+			if (cudaSuccess != (cudaStatus = forward_step(x_dfc, y_dfc, xy_dfc, yx_dfc, rx, ry, x_size, y_size))) return cudaStatus;
 			
-			if (cudaSuccess != (cudaStatus = cycle_transpose(x_size, y_size)))
-				return cudaStatus;
+			if (cudaSuccess != (cudaStatus = cycle_transpose(x_size, y_size))) return cudaStatus;
 			
-			//f_prev,f_curr -> f_curr
-			if (cudaSuccess != (cudaStatus = correction_step(y_dfc, ry, x_size, y_size)))
-				return cudaStatus;
+			if (cudaSuccess != (cudaStatus = correction_step(y_dfc, ry, x_size, y_size))) return cudaStatus;
 
-			if (cudaSuccess != (cudaStatus = cycle_transpose(y_size, x_size)))
-				return cudaStatus;
+			if (cudaSuccess != (cudaStatus = cycle_transpose(y_size, x_size))) return cudaStatus;
 
-			//f_prev,f_curr -> f_curr
-			if (cudaSuccess != (cudaStatus = forward_step_with_mixed_terms_correction(x_dfc, y_dfc, xy_dfc, yx_dfc, rx, ry, x_size, y_size)))
-				return cudaStatus;
+			if (cudaSuccess != (cudaStatus = forward_step_with_mixed_terms_correction(x_dfc, y_dfc, xy_dfc, yx_dfc, rx, ry, x_size, y_size))) return cudaStatus;
 
-			if (cudaSuccess != (cudaStatus = cycle_transpose(x_size, y_size)))
-				return cudaStatus;
+			if (cudaSuccess != (cudaStatus = cycle_transpose(x_size, y_size))) return cudaStatus;
 
-			//f_prev,f_curr -> f_curr
-			if (cudaSuccess != (cudaStatus = correction_step(y_dfc, ry, x_size, y_size)))
-				return cudaStatus;
+			if (cudaSuccess != (cudaStatus = correction_step(y_dfc, ry, x_size, y_size))) return cudaStatus;
 
-			std::swap(f_prev_full, f_curr_full);
-			std::swap(f_prev, f_curr);
-
-			//first iteration y-axis / x-axis
-			//f_prev -> f_curr
-			if (cudaSuccess != (cudaStatus = forward_step(y_dfc, x_dfc, yx_dfc, xy_dfc, ry, rx, y_size, x_size)))
-				return cudaStatus;
-
-			if (cudaSuccess != (cudaStatus = cycle_transpose(y_size, x_size)))
-				return cudaStatus;
-
-			//f_prev,f_curr -> f_curr
-			if (cudaSuccess != (cudaStatus = correction_step(x_dfc, rx, y_size, x_size)))
-				return cudaStatus;
-
-			if (cudaSuccess != (cudaStatus = cycle_transpose(x_size, y_size)))
-				return cudaStatus;
-
-			//f_prev,f_curr -> f_curr
-			if (cudaSuccess != (cudaStatus = forward_step_with_mixed_terms_correction(y_dfc, x_dfc, yx_dfc, xy_dfc, ry, rx, y_size, x_size)))
-				return cudaStatus;
-
-			if (cudaSuccess != (cudaStatus = cycle_transpose(y_size, x_size)))
-				return cudaStatus;
-
-			//f_prev,f_curr -> f_curr
-			if (cudaSuccess != (cudaStatus = correction_step(x_dfc, rx, y_size, x_size)))
-				return cudaStatus;
+			if (cudaSuccess != (cudaStatus = cycle_transpose(y_size, x_size))) return cudaStatus;
 
 			std::swap(f_prev_full, f_curr_full);
 			std::swap(f_prev, f_curr);
@@ -150,6 +141,7 @@ namespace iki { namespace diffusion {
 			return cudaStatus;
 		}
 
+		DeviceMemory device_ptr;
 		size_t const x_size, y_size;
 		T const rx, ry, rxy;
 		T *f_prev_full, *f_curr_full, *f_tmp_full;
