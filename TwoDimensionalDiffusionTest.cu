@@ -19,10 +19,10 @@ int main() {
 	cudaError_t cudaStatus;
 	float *gm_dev = NULL;
 	size_t x_size = 512, y_size = 512;
-	vector<float> f(x_size * y_size), x_diffusion(x_size * y_size), y_diffusion(x_size * y_size);
-	diffusion::x_y_sin_sin_test(f, x_diffusion, y_diffusion, x_size, y_size, 1, 1);
+	vector<float> f(x_size * y_size), x_diffusion(x_size * y_size), y_diffusion(x_size * y_size), xy_diffusion(x_size * y_size), yx_diffusion(x_size * y_size);
+	diffusion::x_y_sin_sin_mixed_term_test(f, x_diffusion, y_diffusion, xy_diffusion, yx_diffusion, x_size, y_size, 1, 1);
 
-	float rx = 10.0f, ry = 10.0f;
+	float rx = 10.0f, ry = 10.0f, rxy = std::sqrt(rx * ry);
 
 	if (cudaSuccess != (cudaStatus = cudaSetDevice(0))) {
 		cerr << "Error in starting cuda device: " << endl;
@@ -30,46 +30,8 @@ int main() {
 		goto End;
 	}
 
-	if (cudaSuccess != (cudaStatus = cudaMalloc((void **)&gm_dev, 9 * x_size * y_size * sizeof(float)))) {
-		cerr << "Can't allocate global device memory of " << (9*x_size*y_size*sizeof(float)/1024) << " Kb: " << endl;
-		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-		goto Clear;
-	}
-	else {
-		cerr << (9 * x_size * y_size * sizeof(float) / 1024) << " Kb: " << " successfully allocated!" << endl;
-	}
-
-	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev, f.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
-		cerr << "Can't copy data from f to device:" << endl;
-		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-		goto Clear;
-	}
-
-	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + x_size * y_size, f.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
-		cerr << "Can't copy data from f to device:" << endl;
-		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-		goto Clear;
-	}
-
-	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + 3 * x_size * y_size, x_diffusion.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
-		cout << "Can't copy data from x_dfc to device:" << endl;
-		cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-		goto Clear;
-	}
-
-	if (cudaSuccess != (cudaStatus = cudaMemcpy(gm_dev + 4 * x_size * y_size, y_diffusion.data(), x_size * y_size * sizeof(float), cudaMemcpyHostToDevice))) {
-		cerr << "Can't copy data from y_dfc to device:" << endl;
-		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-		goto Clear;
-	}
-
 	{
-		size_t matrix_size = x_size * y_size, matrix_shift = y_size + 1;
-		float *f_prev = gm_dev, *f_curr = f_prev + matrix_size, *f_tmp = f_curr + matrix_size, 
-			*x_dfc = f_tmp + matrix_size, *y_dfc = x_dfc + matrix_size, *a = y_dfc + matrix_size, *b = a + matrix_size, *c = b + matrix_size, *d = c + matrix_size;
-
-		iki::diffusion::TwoDimensionalSolver<float> solver(x_size, y_size, rx, ry, f_prev, f_curr, f_tmp, x_dfc + y_size + 1, y_dfc + x_size + 1, a, b, c, d);
-
+		iki::diffusion::TwoDimensionalSolver<float> solver(x_size, y_size, rx, ry, f, x_diffusion, y_diffusion, xy_diffusion, yx_diffusion);
 		auto begin = chrono::steady_clock::now(), end = begin;
 		for (int count = 0; count != 1000; ++count) {
 			if (cudaSuccess != (cudaStatus = solver.step())) {
@@ -83,7 +45,7 @@ int main() {
 		end = chrono::steady_clock::now();
 		cerr << "Time consumed: " << chrono::duration <double, milli>(end - begin).count() << " ms" << endl;
 
-		if (cudaSuccess != (cudaStatus = cudaMemcpy(f.data(), f_prev, x_size*y_size * sizeof(float), cudaMemcpyDeviceToHost))) {
+		if (cudaSuccess != (cudaStatus = cudaMemcpy(f.data(), solver.f_prev_full, x_size*y_size * sizeof(float), cudaMemcpyDeviceToHost))) {
 			cout << "Can't copy data from f_prev to host:" << endl;
 			cout << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
 			goto Clear;
@@ -99,7 +61,6 @@ int main() {
 	}
 
 Clear:
-	if (NULL != gm_dev) cudaFree(gm_dev);
 	if (cudaSuccess != (cudaStatus = cudaDeviceReset())) {
 		cerr << "Error in device process termination: " << endl;
 		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
