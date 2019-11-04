@@ -12,11 +12,22 @@ namespace iki {	namespace diffusion { namespace device {
 			size_t stride_idx = idx * x_stride, stride_prev = stride_idx - x_stride, stride_next = stride_idx + x_stride;
 			d[stride_idx] +=
 				rxy / 2 * (
-					mixed_term_discretization(f_curr[stride_prev - 1], f_curr[stride_idx - 1], f_curr[stride_next - 1], f_curr[stride_prev + 1], f_curr[stride_idx + 1], f_curr[stride_next + 1], xy_dfc[stride_prev], xy_dfc[stride_idx])
-					+ mixed_term_discretization(f_curr[-1 + stride_prev], f_curr[stride_prev], f_curr[+1 + stride_prev], f_curr[-1 + stride_next], f_curr[stride_next], f_curr[+1 + stride_next], yx_dfc[idx - y_stride], yx_dfc[idx])
-
-					- mixed_term_discretization(f_prev[stride_prev - 1], f_prev[stride_idx - 1], f_prev[stride_next - 1], f_prev[stride_prev + 1], f_prev[stride_idx + 1], f_prev[stride_next + 1], xy_dfc[stride_prev], xy_dfc[stride_idx])
-					- mixed_term_discretization(f_prev[-1 + stride_prev], f_prev[stride_prev], f_prev[+1 + stride_prev], f_prev[-1 + stride_next], f_prev[stride_next], f_prev[+1 + stride_next], yx_dfc[idx - y_stride], yx_dfc[idx])
+					mixed_term_discretization(
+						f_curr[stride_prev - 1] - f_prev[stride_prev - 1], 
+						f_curr[stride_idx - 1] - f_prev[stride_idx - 1], 
+						f_curr[stride_next - 1] - f_prev[stride_next - 1], 
+						f_curr[stride_prev + 1] - f_prev[stride_prev + 1], 
+						f_curr[stride_idx + 1] - f_prev[stride_idx + 1], 
+						f_curr[stride_next + 1] - f_prev[stride_next + 1], 
+						xy_dfc[stride_prev], xy_dfc[stride_idx])
+					+ mixed_term_discretization(
+						f_curr[stride_prev - 1] - f_prev[stride_prev - 1],
+						f_curr[stride_prev] - f_prev[stride_prev], 
+						f_curr[stride_prev + 1] - f_prev[stride_prev + 1],
+						f_curr[stride_next - 1] - f_prev[stride_next - 1],
+						f_curr[stride_next] - f_prev[stride_next],
+						f_curr[stride_next + 1] - f_prev[stride_next + 1],
+						yx_dfc[idx - y_stride], yx_dfc[idx])
 				);
 		}
 	}
