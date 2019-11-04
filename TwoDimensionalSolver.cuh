@@ -64,7 +64,7 @@ namespace iki { namespace diffusion {
 			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
 				return cudaStatus;
 
-			math::device::thomson_multisolver_kernell << <blockDim, threads >> > (a, b, c, d, f_curr, x_size - 2, y_size);
+			math::device::thomson_multisolver_kernell<<<blockDim, threads>>>(a, b, c, d, f_curr, x_size - 2, y_size);
 			if (cudaSuccess != (cudaStatus = cudaGetLastError()))
 				return cudaStatus;
 
@@ -88,6 +88,8 @@ namespace iki { namespace diffusion {
 
 		cudaError_t step() {
 			cudaError_t cudaStatus;
+
+			//first iteration x-axis / y-axis
 			//f_prev -> f_curr
 			if (cudaSuccess != (cudaStatus = forward_step(x_dfc, y_dfc, xy_dfc, yx_dfc, rx, ry, x_size, y_size)))
 				return cudaStatus;
@@ -113,11 +115,38 @@ namespace iki { namespace diffusion {
 			if (cudaSuccess != (cudaStatus = correction_step(y_dfc, ry, x_size, y_size)))
 				return cudaStatus;
 
+			std::swap(f_prev_full, f_curr_full);
+			std::swap(f_prev, f_curr);
+
+			//first iteration y-axis / x-axis
+			//f_prev -> f_curr
+			if (cudaSuccess != (cudaStatus = forward_step(y_dfc, x_dfc, yx_dfc, xy_dfc, ry, rx, y_size, x_size)))
+				return cudaStatus;
+
 			if (cudaSuccess != (cudaStatus = cycle_transpose(y_size, x_size)))
+				return cudaStatus;
+
+			//f_prev,f_curr -> f_curr
+			if (cudaSuccess != (cudaStatus = correction_step(x_dfc, rx, y_size, x_size)))
+				return cudaStatus;
+
+			if (cudaSuccess != (cudaStatus = cycle_transpose(x_size, y_size)))
+				return cudaStatus;
+
+			//f_prev,f_curr -> f_curr
+			if (cudaSuccess != (cudaStatus = forward_step_with_mixed_terms_correction(y_dfc, x_dfc, yx_dfc, xy_dfc, ry, rx, y_size, x_size)))
+				return cudaStatus;
+
+			if (cudaSuccess != (cudaStatus = cycle_transpose(y_size, x_size)))
+				return cudaStatus;
+
+			//f_prev,f_curr -> f_curr
+			if (cudaSuccess != (cudaStatus = correction_step(x_dfc, rx, y_size, x_size)))
 				return cudaStatus;
 
 			std::swap(f_prev_full, f_curr_full);
 			std::swap(f_prev, f_curr);
+
 			return cudaStatus;
 		}
 
