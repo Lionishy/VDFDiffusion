@@ -8,6 +8,7 @@
 
 namespace iki {
 	struct DeviceMemory final {
+		DeviceMemory(): size(0), device_ptr(NULL) {  }
 		DeviceMemory(size_t size) : size(size), device_ptr(NULL) {	
 			cudaError_t cudaStatus;
 			if (cudaSuccess != (cudaStatus = cudaMalloc(&device_ptr, size)))
