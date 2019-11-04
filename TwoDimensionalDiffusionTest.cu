@@ -33,14 +33,8 @@ int main() {
 	{
 		iki::diffusion::TwoDimensionalSolver<float> solver(x_size, y_size, rx, ry, f, x_diffusion, y_diffusion, xy_diffusion, yx_diffusion);
 		auto begin = chrono::steady_clock::now(), end = begin;
-		for (int count = 0; count != 1000; ++count) {
-			if (cudaSuccess != (cudaStatus = solver.step())) {
-				cerr << "On iteration " << count << " step kernell failed: " << endl;
-				cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-				cudaDeviceSynchronize();
-				goto Clear;
-			}
-		}
+		for (int count = 0; count != 10; ++count)
+			solver.step();
 		cudaDeviceSynchronize();
 		end = chrono::steady_clock::now();
 		cerr << "Time consumed: " << chrono::duration <double, milli>(end - begin).count() << " ms" << endl;
