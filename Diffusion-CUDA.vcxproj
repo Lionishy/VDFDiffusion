@@ -16,7 +16,9 @@
     <ClInclude Include="CyclicGridsTranspose.cuh" />
     <ClInclude Include="DiagonalDiscretization.cuh" />
     <ClInclude Include="DiffusionTest.h" />
+    <ClInclude Include="ForwardStepCorrectionKernel.cuh" />
     <ClInclude Include="ForwardStepKernel.cuh" />
+    <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh" />
     <ClInclude Include="MixedTermDiscretization.cuh" />
     <ClInclude Include="StridedThomsonSolver.cuh" />
     <ClInclude Include="ForwardStepTridiagonalMatrixCalculation.cuh" />
