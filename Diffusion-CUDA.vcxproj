@@ -22,6 +22,7 @@
     <ClInclude Include="ForwardStepKernel.cuh" />
     <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh" />
     <ClInclude Include="MixedTermDiscretization.cuh" />
+    <ClInclude Include="SimpleTwoDimensionalSolver.cuh" />
     <ClInclude Include="StridedThomsonSolver.cuh" />
     <ClInclude Include="ForwardStepTridiagonalMatrixCalculation.cuh" />
     <ClInclude Include="ThomsonSolver.cuh" />

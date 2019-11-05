@@ -62,5 +62,8 @@
     <ClInclude Include="DiffusionTest.h">
       <Filter>Diffusion</Filter>
     </ClInclude>
+    <ClInclude Include="SimpleTwoDimensionalSolver.cuh">
+      <Filter>Diffusion</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
