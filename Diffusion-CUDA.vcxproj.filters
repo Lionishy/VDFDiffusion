@@ -7,6 +7,12 @@
     <Filter Include="Diffusion">
       <UniqueIdentifier>{967188e5-2d2a-4a02-a7eb-3cac3d758d4c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Diffusion\Kernel">
+      <UniqueIdentifier>{0b06af44-6426-4b54-93ee-89f090fde953}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Diffusion\SingleThread">
+      <UniqueIdentifier>{1ca4b592-fc35-47ea-ba6e-ce9b8c999585}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Transpose.cuh">
@@ -21,41 +27,40 @@
     <ClInclude Include="ThomsonSolverKernel.cuh">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="ForwardStepTridiagonalMatrixCalculation.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
-    <ClInclude Include="DiagonalDiscretization.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
-    <ClInclude Include="ForwardStepKernel.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
-    <ClInclude Include="CorrectionStepKernel.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
-    <ClInclude Include="CorrectionStepTridiagonalMatrixCalculation.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
-    <ClInclude Include="TwoDimensionalDeviceSolver.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
-    <ClInclude Include="DiffusionTest.h" />
     <ClInclude Include="TwoDimensionalSolver.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
-    <ClInclude Include="CyclicGridsTranspose.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
-    <ClInclude Include="MixedTermDiscretization.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
-    <ClInclude Include="ForwardStepCorrectionKernel.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
-    <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
     <ClInclude Include="DeviceMemory.h" />
     <ClInclude Include="DeviceException.h" />
+    <ClInclude Include="CorrectionStepKernel.cuh">
+      <Filter>Diffusion\Kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="ForwardStepCorrectionKernel.cuh">
+      <Filter>Diffusion\Kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="ForwardStepKernel.cuh">
+      <Filter>Diffusion\Kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="CyclicGridsTranspose.cuh">
+      <Filter>Diffusion\Kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="CorrectionStepTridiagonalMatrixCalculation.cuh">
+      <Filter>Diffusion\SingleThread</Filter>
+    </ClInclude>
+    <ClInclude Include="DiagonalDiscretization.cuh">
+      <Filter>Diffusion\SingleThread</Filter>
+    </ClInclude>
+    <ClInclude Include="ForwardStepTridiagonalMatrixCalculation.cuh">
+      <Filter>Diffusion\SingleThread</Filter>
+    </ClInclude>
+    <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh">
+      <Filter>Diffusion\SingleThread</Filter>
+    </ClInclude>
+    <ClInclude Include="MixedTermDiscretization.cuh">
+      <Filter>Diffusion\SingleThread</Filter>
+    </ClInclude>
+    <ClInclude Include="DiffusionTest.h">
+      <Filter>Diffusion</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

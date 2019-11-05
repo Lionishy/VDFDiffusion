@@ -27,7 +27,6 @@
     <ClInclude Include="ThomsonSolver.cuh" />
     <ClInclude Include="ThomsonSolverKernel.cuh" />
     <ClInclude Include="Transpose.cuh" />
-    <ClInclude Include="TwoDimensionalDeviceSolver.cuh" />
     <ClInclude Include="TwoDimensionalSolver.cuh" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
