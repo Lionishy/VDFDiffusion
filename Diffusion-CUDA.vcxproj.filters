@@ -13,6 +13,9 @@
     <Filter Include="Diffusion\SingleThread">
       <UniqueIdentifier>{1ca4b592-fc35-47ea-ba6e-ce9b8c999585}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Table">
+      <UniqueIdentifier>{ca91647c-274c-40a6-94e4-dba5135825b8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Transpose.cuh">
@@ -64,6 +67,12 @@
     </ClInclude>
     <ClInclude Include="AbstractTwoDimensionalSolver.cuh">
       <Filter>Diffusion</Filter>
+    </ClInclude>
+    <ClInclude Include="SimpleTable.h">
+      <Filter>Table</Filter>
+    </ClInclude>
+    <ClInclude Include="SimpleTableIO.h">
+      <Filter>Table</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
