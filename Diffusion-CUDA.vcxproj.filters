@@ -27,9 +27,6 @@
     <ClInclude Include="ThomsonSolverKernel.cuh">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="TwoDimensionalSolver.cuh">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
     <ClInclude Include="DeviceMemory.h" />
     <ClInclude Include="DeviceException.h" />
     <ClInclude Include="CorrectionStepKernel.cuh">
@@ -63,6 +60,9 @@
       <Filter>Diffusion</Filter>
     </ClInclude>
     <ClInclude Include="SimpleTwoDimensionalSolver.cuh">
+      <Filter>Diffusion</Filter>
+    </ClInclude>
+    <ClInclude Include="AbstractTwoDimensionalSolver.cuh">
       <Filter>Diffusion</Filter>
     </ClInclude>
   </ItemGroup>

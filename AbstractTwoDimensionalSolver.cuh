@@ -15,8 +15,8 @@
 
 namespace iki { namespace diffusion {
 	template <typename T>
-	struct TwoDimensionalSolver {
-		TwoDimensionalSolver(size_t x_size, size_t y_size, T rx, T ry, std::vector<T> const &f, std::vector<T> const &x_dfc_host, std::vector<T> const &y_dfc_host, std::vector<T> const &xy_dfc_host, std::vector<T> const &yx_dfc_host): device_ptr(11 * x_size * y_size * sizeof(T)), x_size(x_size), y_size(y_size), rx(rx), ry(ry), rxy(std::sqrt(rx * ry)) {
+	struct AbstractTwoDimensionalSolver {
+		AbstractTwoDimensionalSolver(size_t x_size, size_t y_size, T rx, T ry, std::vector<T> const &f, std::vector<T> const &x_dfc_host, std::vector<T> const &y_dfc_host, std::vector<T> const &xy_dfc_host, std::vector<T> const &yx_dfc_host): device_ptr(11 * x_size * y_size * sizeof(T)), x_size(x_size), y_size(y_size), rx(rx), ry(ry), rxy(std::sqrt(rx * ry)) {
 			//pointers assignment
 			{
 				size_t matrix_size = x_size * y_size;
@@ -34,10 +34,10 @@ namespace iki { namespace diffusion {
 			}
 
 			//precaution to avoid unintended usage of copy / assign / move
-			TwoDimensionalSolver(TwoDimensionalSolver const &src) = delete;
-			TwoDimensionalSolver& operator=(TwoDimensionalSolver const &src) = delete;
-			TwoDimensionalSolver(TwoDimensionalSolver &&src) = delete;
-			TwoDimensionalSolver& operator=(TwoDimensionalSolver &&src) = delete;
+			AbstractTwoDimensionalSolver(AbstractTwoDimensionalSolver const &src) = delete;
+			AbstractTwoDimensionalSolver& operator=(AbstractTwoDimensionalSolver const &src) = delete;
+			AbstractTwoDimensionalSolver(AbstractTwoDimensionalSolver &&src) = delete;
+			AbstractTwoDimensionalSolver& operator=(AbstractTwoDimensionalSolver &&src) = delete;
 
 			//initial data copy
 			{

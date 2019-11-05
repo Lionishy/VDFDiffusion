@@ -28,7 +28,7 @@
     <ClInclude Include="ThomsonSolver.cuh" />
     <ClInclude Include="ThomsonSolverKernel.cuh" />
     <ClInclude Include="Transpose.cuh" />
-    <ClInclude Include="TwoDimensionalSolver.cuh" />
+    <ClInclude Include="AbstractTwoDimensionalSolver.cuh" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7E38C735-632B-4CA7-B815-453F9D480F8C}</ProjectGuid>
