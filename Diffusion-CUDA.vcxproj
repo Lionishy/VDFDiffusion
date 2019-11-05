@@ -30,9 +30,6 @@
     <ClInclude Include="TwoDimensionalDeviceSolver.cuh" />
     <ClInclude Include="TwoDimensionalSolver.cuh" />
   </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="TwoDimensionalDiffusionTest.cu" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7E38C735-632B-4CA7-B815-453F9D480F8C}</ProjectGuid>
     <RootNamespace>Diffusion_CUDA</RootNamespace>
