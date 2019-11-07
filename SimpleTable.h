@@ -109,10 +109,6 @@ namespace iki {
 		Bounds<Dim> bounds;
 		UniformSpace<T, Dim> space;
 	};
-
-	
-
-	
 } /* iki */
 
 #endif
