@@ -22,6 +22,7 @@
     <ClInclude Include="ForwardStepCorrectionKernel.cuh" />
     <ClInclude Include="ForwardStepKernel.cuh" />
     <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh" />
+    <ClInclude Include="InitialDataImport.h" />
     <ClInclude Include="MixedTermDiscretization.cuh" />
     <ClInclude Include="SimpleTable.h" />
     <ClInclude Include="SimpleTableIO.h" />
