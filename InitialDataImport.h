@@ -10,11 +10,11 @@
 
 namespace iki { namespace diffusion { 
 	template <typename T>
-	std::istream& import_initial_data(std::istream &binary_is, UniformSimpleTable<T, 2u, 6u> &f_dfc_table, std::vector<T> &f_dfc_data) {
+	std::istream& import_initial_data(std::istream &binary_is, UniformSimpleTable<T, 2u, 5u> &f_dfc_table, std::vector<T> &f_dfc_data) {
 		read_binary(binary_is, f_dfc_table.space);
 		read_binary(binary_is, f_dfc_table.bounds);
 
-		f_dfc_data.resize(collapsed_size<Dim>(&f_dfc_table.bounds));
+		f_dfc_data.resize(collapsed_size<2u>(&f_dfc_table.bounds));
 		f_dfc_table.data = f_dfc_data.data();
 		read_binary(binary_is, f_dfc_table);
 

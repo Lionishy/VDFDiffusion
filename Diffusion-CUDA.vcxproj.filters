@@ -74,9 +74,6 @@
     <ClInclude Include="SimpleTableIO.h">
       <Filter>Table</Filter>
     </ClInclude>
-    <ClInclude Include="DiffusionCoefficientImport.h">
-      <Filter>Diffusion</Filter>
-    </ClInclude>
     <ClInclude Include="InitialDataImport.h">
       <Filter>Diffusion</Filter>
     </ClInclude>
@@ -85,6 +82,9 @@
     </ClInclude>
     <ClInclude Include="FirstMoment.cuh">
       <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="GammaPivotImport.h">
+      <Filter>Diffusion</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

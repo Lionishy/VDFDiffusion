@@ -17,7 +17,7 @@
     <ClInclude Include="DeviceException.h" />
     <ClInclude Include="DeviceMemory.h" />
     <ClInclude Include="DiagonalDiscretization.cuh" />
-    <ClInclude Include="DiffusionCoefficientImport.h" />
+    <ClInclude Include="GammaPivotImport.h" />
     <ClInclude Include="DiffusionTest.h" />
     <ClInclude Include="FirstMoment.cuh" />
     <ClInclude Include="ForwardStepCorrectionKernel.cuh" />
