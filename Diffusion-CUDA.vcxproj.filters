@@ -80,5 +80,8 @@
     <ClInclude Include="InitialDataImport.h">
       <Filter>Diffusion</Filter>
     </ClInclude>
+    <ClInclude Include="ZeroMoment.cuh">
+      <Filter>Math</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
