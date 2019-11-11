@@ -4,6 +4,7 @@
 #include <device_launch_parameters.h>
 
 #include <vector>
+#include <cmath>
 
 template <typename T>
 struct ZFunc {
@@ -28,7 +29,7 @@ struct ZFunc {
 
 
 template <typename T>
-struct PhysicalParamenters {
+struct PhysicalParameters {
 	//fundamental parameters
 	T nc;               //core particles density
 	T TcTh_ratio;       //ratio of the core temperature to the halo temperature
@@ -42,8 +43,8 @@ struct PhysicalParamenters {
 };
 
 template <typename T>
-PhysicalParamenters<T> init_parameters(T nc, T betta_c, T TcTh_ratio, T bulk_to_alfven_c) {
-	PhysicalParamenters<T> p;
+PhysicalParameters<T> init_parameters(T nc, T betta_c, T TcTh_ratio, T bulk_to_alfven_c) {
+	PhysicalParameters<T> p;
 	p.nc = nc;
 	p.betta_c = betta_c;
 	p.TcTh_ratio = TcTh_ratio;
@@ -69,10 +70,26 @@ struct ResonantVelocityEqn {
 			- params.nh * ((omega * v_res * sqrt(params.TcTh_ratio)) / (omega - T(1)) - params.bulk_to_term_h) * Zh;
 	}
 
-	__device__ ResonantVelocityEqn(T v_res, PhysicalParamenters<T> params, ZFunc<T> Z): v_res(v_res), params(params), Z(Z) {  }
+	__device__ ResonantVelocityEqn(T v_res, PhysicalParameters<T> params, ZFunc<T> Z): v_res(v_res), params(params), Z(Z) {  }
 
 	T v_res;
-	PhysicalParamenters<T> params;
+	PhysicalParameters<T> params;
+	ZFunc<T> Z;
+};
+
+template <typename T>
+struct DispersionRootDerivative {
+	__device__ T operator()(T omega, T k) const {
+		T arg_c = (omega - T(1.)) / (k * p.betta_root_c) - p.bulk_to_term_c;
+		T arg_h = (omega - T(1.)) / (k * p.betta_root_h) - p.bulk_to_term_h;
+		T Zc = Z(arg_c), Zh = Z(arg_h);
+		return p.nc / (k * p.betta_root_c) * (-Zc + (omega / (k * p.betta_root_c) - p.bulk_to_term_c) * (Zc * arg_c + T(1.)))
+			+ p.nh / (k * p.betta_root_h) * (-Zh + (omega / (k * p.betta_root_h) - p.bulk_to_term_h) * (Zh * arg_h + T(1.)));
+	}
+
+	__device__ DispersionRootDerivative(PhysicalParameters<T> params, ZFunc<T> Z): params(params), Z(Z) { }
+
+	PhysicalParameters<T> params;
 	ZFunc<T> Z;
 };
 
@@ -93,11 +110,66 @@ __device__ int step_solver(Eqn_t f, T start, T step, T stop, T *res) {
 }
 
 template <typename T>
-__global__ void dispersion_relation_solve(T const *v_res, T *omegas, int *status, unsigned size, PhysicalParamenters<T> params, T z_func_step, unsigned z_func_size, T *z_func_table) {
+__global__ void dispersion_relation_solve(T const *v_res, T *omega, T *derive, int *status, unsigned size, PhysicalParameters<T> params, T z_func_step, unsigned z_func_size, T *z_func_table) {
 	unsigned shift = blockIdx.x * blockDim.x + threadIdx.x;
 	ResonantVelocityEqn<T> eqn(*(v_res + shift), params, ZFunc<T>(z_func_step, z_func_size, z_func_table));
-	*(status + shift) = step_solver(eqn, T(0.), T(1.e-5), T(1. + 1.e-6), omegas + shift);
+	DispersionRootDerivative<T> dispersion_derive(params, ZFunc<T>(z_func_step, z_func_size, z_func_table));
+
+	*(status + shift) = step_solver(eqn, T(0.), T(1.e-5), T(1. + 1.e-6), omega + shift);
+	if (0 == *(status + shift)) {
+		T k = (*(omega + shift) - T(1.)) / (*(v_res + shift) * params.betta_root_c);
+		*(derive + shift) = dispersion_derive(*(omega + shift), k);
+	}
 }
+
+template <int P, typename T>
+T pow(T arg) {
+	T res = T(1.);
+	for (uint32_t counter = 0u; counter != P; ++counter)
+		res *= arg;
+	return res;
+}
+
+
+
+template <typename T>
+struct VDF {
+public:
+	VDF(PhysicalParameters<T> params) : p(params) { }
+
+	T operator()(T vperp, T vparall) const {
+		T coeff_c = std::exp(-pow<2>(vperp) * T(0.5)), coeff_h = std::exp(-pow<2>(vperp) * T(0.5) * p.TcTh_ratio);
+		return
+			p.nc * coeff_c * std::exp(-T(0.5) * pow<2>(vparall - p.bulk_to_term_c))
+			+ p.nh * pow<3>(std::sqrt(p.TcTh_ratio)) * coeff_h *
+			std::exp(-T(0.5) * pow<2>(vparall * std::sqrt(p.TcTh_ratio) - p.bulk_to_term_h));
+	}
+
+private:
+	PhysicalParameters<T> p;
+};
+
+template <typename T>
+class VDFUniformGridTabulator final {
+public:
+	VDFUniformGridTabulator(PhysicalParameters<T> params) : vdf(params) { }
+
+	iki::UniformSimpleTable<T, 2u, 1u> operator()(iki::UniformSimpleTable<T, 2u, 1u> &table) {
+		for (unsigned vparall_counter = 0u; vparall_counter != table.bounds.components[0]; ++vparall_counter) {
+			for (unsigned vperp_counter = 0u; vperp_counter != table.bounds.components[1]; ++vperp_counter) {
+				table.data[vperp_counter + vparall_counter * table.bounds.components[1]] =
+					vdf(
+						table.space.axes[1].begin + table.space.axes[1].step * vperp_counter
+						, table.space.axes[1].begin + table.space.axes[1].step * vparall_counter
+					);
+			}
+		}
+		return table;
+	}
+
+private:
+	VDF<T> vdf;
+};
 
 #include "SimpleTable.h"
 #include "SimpleTableIO.h"
@@ -139,9 +211,9 @@ int main() {
 
 	//CUDA
 	unsigned size = 1024;
-	unsigned bytes = size * (2 * sizeof(float) + sizeof(int)) + sizeof(float) * zfunc_table.bounds.components[0];
+	unsigned bytes = size * (3 * sizeof(float) + sizeof(int)) + sizeof(float) * zfunc_table.bounds.components[0];
 	void *global_memory = NULL;
-	float *v_res_dev = NULL, *omegas_dev = NULL, *zfunc_table_dev; int *status_dev = NULL;
+	float *v_res_dev = NULL, *omegas_dev = NULL, *derive_dev = NULL, *zfunc_table_dev = NULL; int *status_dev = NULL;
 	
 	vector<float> v_res_data(size), omegas(size);
 	cudaError_t cudaStatus;
@@ -157,10 +229,11 @@ int main() {
 	}
 	v_res_dev = (float *)global_memory;
 	omegas_dev = v_res_dev + size;
-	status_dev = (int *)(omegas_dev + size);
+	derive_dev = omegas_dev + size;
+	status_dev = (int *)(derive_dev + size);
 	zfunc_table_dev = (float *)(status_dev + size);
 
-	float start = 0.9f, step = 15.f / (size - 1);
+	float start = -0.9f, step = -15.f / (size - 1);
 	for (unsigned idx = 0; idx != size; ++idx)
 		v_res_data[idx] = start + step * idx;
 			
@@ -174,7 +247,7 @@ int main() {
 		goto Clear;
 	}
 
-	PhysicalParamenters<float> params = init_parameters(0.85f, 1.f / 0.85f, 0.25f, -11.f);
+	PhysicalParameters<float> params = init_parameters(0.85f, 1.f / 0.85f, 0.25f, -9.f);
 	{
 		auto begin = chrono::steady_clock::now(), end = begin;
 		dispersion_relation_solve<<<1, 1024>>>(v_res_dev, omegas_dev, status_dev, size, params, zfunc_table.space.axes[0].step, zfunc_table.bounds.components[0], zfunc_table_dev);
@@ -199,7 +272,7 @@ int main() {
 		ofstream ascii_os("./data/fdispersion.txt");
 		ascii_os.precision(7); ascii_os.setf(ios::fixed, ios::floatfield);
 		for (unsigned idx = 0; idx != size; ++idx)
-			ascii_os << v_res_data[idx] << " " << omegas[idx] << " " << (1.f - omegas[idx]) / (v_res_data[idx] * params.betta_root_c) << '\n';
+			ascii_os << v_res_data[idx] << " " << omegas[idx] << " " << (omegas[idx] - 1.f) / (v_res_data[idx] * params.betta_root_c) << '\n';
 	}
 
 Clear:
