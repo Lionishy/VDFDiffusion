@@ -117,6 +117,8 @@ std::istream &ZFuncImport(std::istream &binary_is, iki::UniformSimpleTable<T, 1u
 	return binary_is;
 }
 
+#include <chrono>
+
 int main() {
 	using namespace std;
 	using namespace iki;
@@ -131,66 +133,82 @@ int main() {
 	}
 	catch (exception const &ex) {
 		cerr << "Error in reading ZFunc data: " << ex.what() << endl;
+		return 0;
 	}
 
+
 	//CUDA
-	{
-		unsigned size = 1024;
-		unsigned bytes = size * (2 * sizeof(float) + sizeof(int)) + sizeof(float) * zfunc_table.bounds.components[0];
-		void *global_memory = NULL;
-		float *v_res_dev = NULL, *omegas_dev = NULL, *zfunc_table_dev; int *status_dev = NULL;
-
-		cudaError_t cudaStatus;
-		if (cudaSuccess != (cudaStatus = cudaSetDevice(0))) {
-			cerr << "Error in starting cuda device: " << endl;
-			cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
-			goto End;
-		}
+	unsigned size = 1024;
+	unsigned bytes = size * (2 * sizeof(float) + sizeof(int)) + sizeof(float) * zfunc_table.bounds.components[0];
+	void *global_memory = NULL;
+	float *v_res_dev = NULL, *omegas_dev = NULL, *zfunc_table_dev; int *status_dev = NULL;
+	
+	vector<float> v_res_data(size), omegas(size);
+	cudaError_t cudaStatus;
+	if (cudaSuccess != (cudaStatus = cudaSetDevice(0))) {
+		cerr << "Error in starting cuda device: " << endl;
+		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+		goto End;
+	}
 		
-		if (cudaSuccess != (cudaStatus = cudaMalloc(&global_memory, bytes))) {
-			cout << "Can't allocate memory!" << endl;
-			goto Clear;
-		}
-		v_res_dev = (float *)global_memory;
-		omegas_dev = v_res_dev + size;
-		status_dev = (int *)(omegas_dev + size);
-		zfunc_table_dev = (float *)(status_dev + size);
+	if (cudaSuccess != (cudaStatus = cudaMalloc(&global_memory, bytes))) {
+		cout << "Can't allocate memory!" << endl;
+		goto Clear;
+	}
+	v_res_dev = (float *)global_memory;
+	omegas_dev = v_res_dev + size;
+	status_dev = (int *)(omegas_dev + size);
+	zfunc_table_dev = (float *)(status_dev + size);
 
-		{
-			vector<float> v_res_data(size); float start = 0.9f, step = 15.f / (size-1);
-			for (unsigned idx = 0; idx != size; ++idx)
-				v_res_data[idx] = start + step * idx;
+	float start = 0.9f, step = 15.f / (size - 1);
+	for (unsigned idx = 0; idx != size; ++idx)
+		v_res_data[idx] = start + step * idx;
 			
-			if (cudaSuccess != (cudaStatus = cudaMemcpy(v_res_dev, v_res_data.data(), size * sizeof(float), cudaMemcpyHostToDevice))) {
-				cout << "Can't copy v_res data from host to device!" << endl;
-				goto Clear;
-			}
+	if (cudaSuccess != (cudaStatus = cudaMemcpy(v_res_dev, v_res_data.data(), size * sizeof(float), cudaMemcpyHostToDevice))) {
+		cout << "Can't copy v_res data from host to device!" << endl;
+		goto Clear;
+	}
 
-			if (cudaSuccess != (cudaStatus = cudaMemcpy(zfunc_table_dev, zfunc_data.data(), sizeof(float) * zfunc_table.bounds.components[0], cudaMemcpyHostToDevice))) {
-				cout << "Can't copy zfunc table data from host to device!" << endl;
-				goto Clear;
-			}
-		}
+	if (cudaSuccess != (cudaStatus = cudaMemcpy(zfunc_table_dev, zfunc_data.data(), sizeof(float) * zfunc_table.bounds.components[0], cudaMemcpyHostToDevice))) {
+		cout << "Can't copy zfunc table data from host to device!" << endl;
+		goto Clear;
+	}
 
-		PhysicalParamenters<float> params = init_parameters(0.85f, 1.f / 0.85f, 0.25f, -11.f);
+	PhysicalParamenters<float> params = init_parameters(0.85f, 1.f / 0.85f, 0.25f, -11.f);
+	{
+		auto begin = chrono::steady_clock::now(), end = begin;
 		dispersion_relation_solve<<<1, 1024>>>(v_res_dev, omegas_dev, status_dev, size, params, zfunc_table.space.axes[0].step, zfunc_table.bounds.components[0], zfunc_table_dev);
 
 		if (cudaSuccess != (cudaStatus = cudaGetLastError())) {
 			cout << "Failed launch kernell!" << endl;
-		}
-		else {
-			cout << "Success!" << endl;
-		}
-
-	Clear:
-		if (NULL != global_memory) cudaFree(global_memory);
-		if (cudaSuccess != (cudaStatus = cudaDeviceReset())) {
-			cerr << "Error in device process termination: " << endl;
-			cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+			cudaDeviceSynchronize();
+			goto Clear;
 		}
 
-	End:;
+		cudaDeviceSynchronize();
+		end = chrono::steady_clock::now();
+		cerr << "Time consumed: " << chrono::duration <double, milli>(end - begin).count() << " ms" << endl;
 	}
-	
+
+	if (cudaSuccess != (cudaStatus = cudaMemcpy(omegas.data(), omegas_dev, size * sizeof(float), cudaMemcpyDeviceToHost))) {
+		cerr << "Can't copy omega data from device to host: " << cudaGetErrorString(cudaStatus) << endl;
+		goto Clear;
+	}
+
+	{
+		ofstream ascii_os("./data/fdispersion.txt");
+		ascii_os.precision(7); ascii_os.setf(ios::fixed, ios::floatfield);
+		for (unsigned idx = 0; idx != size; ++idx)
+			ascii_os << v_res_data[idx] << " " << omegas[idx] << " " << (1.f - omegas[idx]) / (v_res_data[idx] * params.betta_root_c) << '\n';
+	}
+
+Clear:
+	if (NULL != global_memory) cudaFree(global_memory);
+	if (cudaSuccess != (cudaStatus = cudaDeviceReset())) {
+		cerr << "Error in device process termination: " << endl;
+		cerr << cudaStatus << " -- " << cudaGetErrorString(cudaStatus) << endl;
+	}
+
+End:;
 	return 0;
 }
