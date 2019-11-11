@@ -87,4 +87,7 @@
       <Filter>Diffusion</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="GammaRecalculation.cu" />
+  </ItemGroup>
 </Project>
