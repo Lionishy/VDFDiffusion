@@ -204,6 +204,7 @@ private:
 };
 
 #include "ZeroMoment.cuh"
+#include "FirstMoment.cuh"
 
 template <typename T>
 __global__ void zero_moment_kernel(T const *f, T start, T dx, unsigned x_size, unsigned y_size, T *zero_moment) {
@@ -218,7 +219,7 @@ template <typename T>
 __global__ void first_moment_kernel(T const *f, T start, T dx, unsigned x_size, unsigned y_size, T *first_moment) {
 	unsigned shift = blockIdx.x * blockDim.x + threadIdx.x;
 	T s, rem;
-	iki::math::device::zero_moment(f + shift + y_size, start, dx, x_size - 2, y_size, &s, &rem);
+	iki::math::device::first_moment(f + shift + y_size, start, dx, x_size - 2, y_size, &s, &rem);
 	s -= T(0.5) * (*(f + shift) * start + *(f + shift + y_size * (x_size - 1)) * (start + dx * (x_size - 1)));
 	*(first_moment + shift) = s * dx;
 }
@@ -231,7 +232,7 @@ __global__ void gamma_kernel(T const *zero_moment, T const *first_moment, T cons
 	}
 	T k_betta = (*(omega + shift) - T(1)) / (vparall_begin + vparall_step * shift);
 	T first_moment_derive = T(0.5) * (first_moment[shift + 1] - first_moment[shift - 1]) / vparall_step;
-	gamma[shift] = T(1) / k_betta * (k_betta * first_moment_derive - zero_moment[shift]) / dispersion_derive[shift];
+	gamma[shift] = - T(1.25331414) / k_betta * (k_betta * first_moment_derive - zero_moment[shift]) / dispersion_derive[shift];
 }
 
 #include "SimpleTable.h"
@@ -252,11 +253,56 @@ std::istream &ZFuncImport(std::istream &binary_is, iki::UniformSimpleTable<T, 1u
 	return binary_is;
 }
 
+template <typename T>
+class AnalyticalMoments final {
+public:
+	AnalyticalMoments(PhysicalParameters<T> p) : p(p) { }
+
+	std::vector<T> g(T vparall_begin, T vparall_step, unsigned size) const {
+		auto g_vparall = [this] (T vparall) {
+			return p.nc * std::exp(-pow<2>(vparall - p.bulk_to_term_c) / T(2.)) + p.nh * std::sqrt(p.TcTh_ratio) * exp(-pow<2>(vparall * std::sqrt(p.TcTh_ratio) - p.bulk_to_term_h) / T(2.));
+		};
+		std::vector<T> table(size);
+		for (unsigned count = 0u; count < size; ++count)
+			table[count] = g_vparall(vparall_begin + vparall_step * count);
+		return table;
+	}
+
+	std::vector<T> G(T vparall_begin, T vparall_step, unsigned size) const {
+		auto G_vparall = [this] (T vparall) {
+			return p.nc * std::exp(-pow<2>(vparall - p.bulk_to_term_c) / T(2.)) + p.nh * std::sqrt(T(1.) / p.TcTh_ratio) * exp(-pow<2>(vparall * std::sqrt(p.TcTh_ratio) - p.bulk_to_term_h) / T(2.));
+		};
+		std::vector<T> table(size);
+		for (unsigned count = 0u; count < size; ++count)
+			table[count] = G_vparall(vparall_begin + vparall_step * count);
+		return table;
+	}
+
+private:
+	PhysicalParameters<T> p;
+};
+
 #include <chrono>
 
 int main() {
 	using namespace std;
 	using namespace iki;
+
+	PhysicalParameters<float> params = init_parameters(0.85f, 1.f / 0.85f, 0.25f, -9.f);
+	/*AnalyticalMoments<float> moments(params);
+	vector<float> g, G;
+	float vparall_begin = -0.9f, vparall_step = -15.f / 1023;
+	g = moments.g(-0.9f, -15.f / 1023, 1024);
+	G = moments.G(-0.9f, -15.f / 1023, 1024);
+
+	{
+		ofstream ascii_os("./data/analytical_moments.txt");
+		ascii_os.precision(7); ascii_os.setf(ios::fixed, ios::floatfield);
+		for (unsigned idx = 0; idx != 1024; ++idx) {
+			ascii_os << (vparall_begin + vparall_step * idx) << " " << g[idx] << " " << G[idx] << endl;
+		}
+	}
+	return 0;*/
 
 	/* Load ZFunc table */
 	UniformSimpleTable<float, 1u, 1u> zfunc_table;
@@ -270,16 +316,14 @@ int main() {
 		cerr << "Error in reading ZFunc data: " << ex.what() << endl;
 		return 0;
 	}
-
-
-	PhysicalParameters<float> params = init_parameters(0.85f, 1.f / 0.85f, 0.25f, -9.f);
+	
 	unsigned size = 1024;
 	UniformSimpleTable<float, 2u, 1u> vdf_table; //0 - vperp, 1 - vparall
 	{
 		vdf_table.bounds.components[0] = vdf_table.bounds.components[1] = size;
 		vdf_table.space.axes[0].begin = 0.f;
-		vdf_table.space.axes[0].step = 115.f / (size - 1);
-		vdf_table.space.axes[1].begin = -0.9f;
+		vdf_table.space.axes[0].step = 100.f / (size - 1);
+		vdf_table.space.axes[1].begin = -1.0f;
 		vdf_table.space.axes[1].step = -15.f / (size - 1);
 	}
 	vector<float> vdf_data(collapsed_size(&vdf_table.bounds));
