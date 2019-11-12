@@ -19,6 +19,9 @@
     <Filter Include="WHFI">
       <UniqueIdentifier>{a5fa9700-48d4-4b23-b902-879bf829518c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ZFunc">
+      <UniqueIdentifier>{fc2a34e0-215a-4274-9012-1b2e62d3b6a2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Transpose.cuh">
@@ -91,6 +94,12 @@
     </ClInclude>
     <ClInclude Include="PhysicalParameters.h">
       <Filter>WHFI</Filter>
+    </ClInclude>
+    <ClInclude Include="ZFunc.cuh">
+      <Filter>ZFunc</Filter>
+    </ClInclude>
+    <ClInclude Include="ZFuncImport.h">
+      <Filter>ZFunc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

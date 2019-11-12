@@ -1,33 +1,14 @@
 #include "SimpleTable.h"
 #include "SimpleTableIO.h"
 #include "PhysicalParameters.h"
+#include "ZFunc.cuh"
+#include "ZFuncImport.h"
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
 #include <vector>
 #include <cmath>
-
-template <typename T>
-struct ZFunc {
-	__device__ T operator()(T arg) const {
-		T farg = fabs(arg);
-		auto idx = size_t(farg / step);
-		if ((idx + 1u) < size) {
-			return (arg > T(0.) ? T(1) : T(-1)) *((table[idx + 1u] - table[idx]) / step * (farg - step * idx) + table[idx]);
-		}
-		else { //asymptotic
-			T over = T(1.) / arg, square = over * over;
-			return -over * (T(1) + square + T(3) * square * square);
-		}
-	}
-
-	__device__ ZFunc(T step, unsigned size, T *table): step(step), size(size), table(table) {  }
-
-	T step;
-	unsigned size;
-	T *table;
-};
 
 template <typename T>
 struct ResonantVelocityEqn {
@@ -40,11 +21,11 @@ struct ResonantVelocityEqn {
 			- params.nh * ((omega * v_res * sqrt(params.TcTh_ratio)) / (omega - T(1)) - params.bulk_to_term_h) * Zh;
 	}
 
-	__device__ ResonantVelocityEqn(T v_res, iki::whfi::PhysicalParameters<T> params, ZFunc<T> Z): v_res(v_res), params(params), Z(Z) {  }
+	__device__ ResonantVelocityEqn(T v_res, iki::whfi::PhysicalParameters<T> params, iki::ZFunc<T> Z): v_res(v_res), params(params), Z(Z) {  }
 
 	T v_res;
 	iki::whfi::PhysicalParameters<T> params;
-	ZFunc<T> Z;
+	iki::ZFunc<T> Z;
 };
 
 template <typename T>
@@ -57,10 +38,10 @@ struct DispersionRootDerivative {
 			+ params.nh / (k * params.betta_root_h) * (-Zh + (omega / (k * params.betta_root_h) - params.bulk_to_term_h) * (Zh * arg_h + T(1.)));
 	}
 
-	__device__ DispersionRootDerivative(iki::whfi::PhysicalParameters<T> params, ZFunc<T> Z): params(params), Z(Z) { }
+	__device__ DispersionRootDerivative(iki::whfi::PhysicalParameters<T> params, iki::ZFunc<T> Z): params(params), Z(Z) { }
 
 	iki::whfi::PhysicalParameters<T> params;
-	ZFunc<T> Z;
+	iki::ZFunc<T> Z;
 };
 
 template <typename T, typename Eqn_t>
@@ -82,8 +63,8 @@ __device__ int step_solver(Eqn_t f, T start, T step, T stop, T *res) {
 template <typename T>
 __global__ void dispersion_relation_solve(T const *v_res, T *omega, T *derive, int *status, unsigned size, iki::whfi::PhysicalParameters<T> params, T z_func_step, unsigned z_func_size, T *z_func_table) {
 	unsigned shift = blockIdx.x * blockDim.x + threadIdx.x;
-	ResonantVelocityEqn<T> eqn(*(v_res + shift), params, ZFunc<T>(z_func_step, z_func_size, z_func_table));
-	DispersionRootDerivative<T> dispersion_derive(params, ZFunc<T>(z_func_step, z_func_size, z_func_table));
+	ResonantVelocityEqn<T> eqn(*(v_res + shift), params, iki::ZFunc<T>(z_func_step, z_func_size, z_func_table));
+	DispersionRootDerivative<T> dispersion_derive(params, iki::ZFunc<T>(z_func_step, z_func_size, z_func_table));
 
 	*(status + shift) = step_solver(eqn, T(0.), T(1.e-5), T(1. + 1.e-6), omega + shift);
 	if (0 == *(status + shift)) {
@@ -99,8 +80,6 @@ T pow(T arg) {
 		res *= arg;
 	return res;
 }
-
-
 
 template <typename T>
 struct VDF {
@@ -209,16 +188,7 @@ __global__ void gamma_kernel(T const *zero_moment, T const *first_moment, T cons
 #include <fstream>
 #include <vector>
 
-template <typename T>
-std::istream &ZFuncImport(std::istream &binary_is, iki::UniformSimpleTable<T, 1u, 1u> &zfunc_table, std::vector<T> &zfunc_data) {
-	read_binary(binary_is, zfunc_table.space);
-	read_binary(binary_is, zfunc_table.bounds);
 
-	zfunc_data.resize(zfunc_table.bounds.components[0]);
-	zfunc_table.data = zfunc_data.data();
-	read_binary(binary_is, zfunc_table);
-	return binary_is;
-}
 
 template <typename T>
 class AnalyticalMoments final {

@@ -36,6 +36,8 @@
     <ClInclude Include="Transpose.cuh" />
     <ClInclude Include="AbstractTwoDimensionalSolver.cuh" />
     <ClInclude Include="ZeroMoment.cuh" />
+    <ClInclude Include="ZFunc.cuh" />
+    <ClInclude Include="ZFuncImport.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />
