@@ -104,6 +104,9 @@
     <ClInclude Include="Pow.h">
       <Filter>Math</Filter>
     </ClInclude>
+    <ClInclude Include="KahanTabulator.h">
+      <Filter>Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />
