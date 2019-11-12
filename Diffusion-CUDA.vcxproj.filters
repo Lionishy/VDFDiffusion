@@ -101,6 +101,9 @@
     <ClInclude Include="ZFuncImport.h">
       <Filter>ZFunc</Filter>
     </ClInclude>
+    <ClInclude Include="Pow.h">
+      <Filter>Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />

@@ -3,6 +3,7 @@
 #include "PhysicalParameters.h"
 #include "ZFunc.cuh"
 #include "ZFuncImport.h"
+#include "Pow.h"
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
@@ -73,25 +74,17 @@ __global__ void dispersion_relation_solve(T const *v_res, T *omega, T *derive, i
 	}
 }
 
-template <int P, typename T>
-T pow(T arg) {
-	T res = T(1.);
-	for (uint32_t counter = 0u; counter != P; ++counter)
-		res *= arg;
-	return res;
-}
-
 template <typename T>
 struct VDF {
 public:
 	VDF(iki::whfi::PhysicalParameters<T> params) : p(params) { }
 
 	T operator()(T vperp, T vparall) const {
-		T coeff_c = std::exp(-pow<2>(vperp) * T(0.5)), coeff_h = std::exp(-pow<2>(vperp) * T(0.5) * p.TcTh_ratio);
+		T coeff_c = std::exp(-iki::math::pow<2>(vperp) * T(0.5)), coeff_h = std::exp(-pow<2>(vperp) * T(0.5) * p.TcTh_ratio);
 		return
-			p.nc * coeff_c * std::exp(-T(0.5) * pow<2>(vparall - p.bulk_to_term_c))
-			+ p.nh * pow<3>(std::sqrt(p.TcTh_ratio)) * coeff_h *
-			std::exp(-T(0.5) * pow<2>(vparall * std::sqrt(p.TcTh_ratio) - p.bulk_to_term_h));
+			p.nc * coeff_c * std::exp(-T(0.5) * iki::math::pow<2>(vparall - p.bulk_to_term_c))
+			+ p.nh * iki::math::pow<3>(std::sqrt(p.TcTh_ratio)) * coeff_h *
+			std::exp(-T(0.5) * iki::math::pow<2>(vparall * std::sqrt(p.TcTh_ratio) - p.bulk_to_term_h));
 	}
 
 private:
@@ -106,9 +99,9 @@ public:
 	T operator()(T mu, T vparall) const {
 		T coeff_c = std::exp(-mu), coeff_h = std::exp(-mu * p.TcTh_ratio);
 		return
-			p.nc * coeff_c * std::exp(-T(0.5) * pow<2>(vparall - p.bulk_to_term_c))
-			+ p.nh * pow<3>(std::sqrt(p.TcTh_ratio)) * coeff_h *
-			std::exp(-T(0.5) * pow<2>(vparall * std::sqrt(p.TcTh_ratio) - p.bulk_to_term_h));
+			p.nc * coeff_c * std::exp(-T(0.5) * iki::math::pow<2>(vparall - p.bulk_to_term_c))
+			+ p.nh * iki::math::pow<3>(std::sqrt(p.TcTh_ratio)) * coeff_h *
+			std::exp(-T(0.5) * iki::math::pow<2>(vparall * std::sqrt(p.TcTh_ratio) - p.bulk_to_term_h));
 	}
 
 private:

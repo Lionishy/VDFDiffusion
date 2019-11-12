@@ -26,6 +26,7 @@
     <ClInclude Include="InitialDataImport.h" />
     <ClInclude Include="MixedTermDiscretization.cuh" />
     <ClInclude Include="PhysicalParameters.h" />
+    <ClInclude Include="Pow.h" />
     <ClInclude Include="SimpleTable.h" />
     <ClInclude Include="SimpleTableIO.h" />
     <ClInclude Include="SimpleTwoDimensionalSolver.cuh" />
