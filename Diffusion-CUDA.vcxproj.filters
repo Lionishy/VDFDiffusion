@@ -107,6 +107,9 @@
     <ClInclude Include="KahanTabulator.h">
       <Filter>Math</Filter>
     </ClInclude>
+    <ClInclude Include="ZFuncRungeKuttaSequence.h">
+      <Filter>ZFunc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />

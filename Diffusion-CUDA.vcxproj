@@ -40,6 +40,7 @@
     <ClInclude Include="ZeroMoment.cuh" />
     <ClInclude Include="ZFunc.cuh" />
     <ClInclude Include="ZFuncImport.h" />
+    <ClInclude Include="ZFuncRungeKuttaSequence.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />
