@@ -1,4 +1,6 @@
 #include "SimpleTable.h"
+#include "SimpleTableIO.h"
+#include "PhysicalParameters.h"
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
@@ -27,38 +29,6 @@ struct ZFunc {
 	T *table;
 };
 
-
-template <typename T>
-struct PhysicalParameters {
-	//fundamental parameters
-	T nc;               //core particles density
-	T TcTh_ratio;       //ratio of the core temperature to the halo temperature
-	T betta_c;          //ratio of the core thermal pressure to the magnetic pressure
-	T bulk_to_alfven_c; //bulk speed in terms of alfven speed
-
-	//derived parameters
-	T nh;
-	T betta_root_c, betta_root_h;     //square root of the betta parameters core and halo
-	T bulk_to_term_c, bulk_to_term_h; //bulk velocity in terms of thermal speed
-};
-
-template <typename T>
-PhysicalParameters<T> init_parameters(T nc, T betta_c, T TcTh_ratio, T bulk_to_alfven_c) {
-	PhysicalParameters<T> p;
-	p.nc = nc;
-	p.betta_c = betta_c;
-	p.TcTh_ratio = TcTh_ratio;
-	p.bulk_to_alfven_c = bulk_to_alfven_c;
-
-	p.nh = T(1) - nc;
-	p.betta_root_c = std::sqrt(T(0.5) * betta_c);
-	p.betta_root_h = std::sqrt(T(0.5) * betta_c / TcTh_ratio);
-	p.bulk_to_term_c = bulk_to_alfven_c / p.betta_root_c * std::sqrt(T(1. / 1836.));
-	p.bulk_to_term_h = -(nc / p.nh) * p.bulk_to_term_c * std::sqrt(TcTh_ratio);
-
-	return p;
-}
-
 template <typename T>
 struct ResonantVelocityEqn {
 	__device__ T operator()(T omega) const {
@@ -70,10 +40,10 @@ struct ResonantVelocityEqn {
 			- params.nh * ((omega * v_res * sqrt(params.TcTh_ratio)) / (omega - T(1)) - params.bulk_to_term_h) * Zh;
 	}
 
-	__device__ ResonantVelocityEqn(T v_res, PhysicalParameters<T> params, ZFunc<T> Z): v_res(v_res), params(params), Z(Z) {  }
+	__device__ ResonantVelocityEqn(T v_res, iki::whfi::PhysicalParameters<T> params, ZFunc<T> Z): v_res(v_res), params(params), Z(Z) {  }
 
 	T v_res;
-	PhysicalParameters<T> params;
+	iki::whfi::PhysicalParameters<T> params;
 	ZFunc<T> Z;
 };
 
@@ -87,9 +57,9 @@ struct DispersionRootDerivative {
 			+ params.nh / (k * params.betta_root_h) * (-Zh + (omega / (k * params.betta_root_h) - params.bulk_to_term_h) * (Zh * arg_h + T(1.)));
 	}
 
-	__device__ DispersionRootDerivative(PhysicalParameters<T> params, ZFunc<T> Z): params(params), Z(Z) { }
+	__device__ DispersionRootDerivative(iki::whfi::PhysicalParameters<T> params, ZFunc<T> Z): params(params), Z(Z) { }
 
-	PhysicalParameters<T> params;
+	iki::whfi::PhysicalParameters<T> params;
 	ZFunc<T> Z;
 };
 
@@ -110,7 +80,7 @@ __device__ int step_solver(Eqn_t f, T start, T step, T stop, T *res) {
 }
 
 template <typename T>
-__global__ void dispersion_relation_solve(T const *v_res, T *omega, T *derive, int *status, unsigned size, PhysicalParameters<T> params, T z_func_step, unsigned z_func_size, T *z_func_table) {
+__global__ void dispersion_relation_solve(T const *v_res, T *omega, T *derive, int *status, unsigned size, iki::whfi::PhysicalParameters<T> params, T z_func_step, unsigned z_func_size, T *z_func_table) {
 	unsigned shift = blockIdx.x * blockDim.x + threadIdx.x;
 	ResonantVelocityEqn<T> eqn(*(v_res + shift), params, ZFunc<T>(z_func_step, z_func_size, z_func_table));
 	DispersionRootDerivative<T> dispersion_derive(params, ZFunc<T>(z_func_step, z_func_size, z_func_table));
@@ -135,7 +105,7 @@ T pow(T arg) {
 template <typename T>
 struct VDF {
 public:
-	VDF(PhysicalParameters<T> params) : p(params) { }
+	VDF(iki::whfi::PhysicalParameters<T> params) : p(params) { }
 
 	T operator()(T vperp, T vparall) const {
 		T coeff_c = std::exp(-pow<2>(vperp) * T(0.5)), coeff_h = std::exp(-pow<2>(vperp) * T(0.5) * p.TcTh_ratio);
@@ -146,13 +116,13 @@ public:
 	}
 
 private:
-	PhysicalParameters<T> p;
+	iki::whfi::PhysicalParameters<T> p;
 };
 
 template <typename T>
 struct VDFmu {
 public:
-	VDFmu(PhysicalParameters<T> params) : p(params) { }
+	VDFmu(iki::whfi::PhysicalParameters<T> params) : p(params) { }
 
 	T operator()(T mu, T vparall) const {
 		T coeff_c = std::exp(-mu), coeff_h = std::exp(-mu * p.TcTh_ratio);
@@ -163,13 +133,13 @@ public:
 	}
 
 private:
-	PhysicalParameters<T> p;
+	iki::whfi::PhysicalParameters<T> p;
 };
 
 template <typename T>
 class VDFUniformGridTabulator final {
 public:
-	VDFUniformGridTabulator(PhysicalParameters<T> params) : vdf(params) { }
+	VDFUniformGridTabulator(iki::whfi::PhysicalParameters<T> params) : vdf(params) { }
 
 	//sizes: 0 - vparall, 1 - vperp
 	iki::UniformSimpleTable<T, 2u, 1u> vperp_near(iki::UniformSimpleTable<T, 2u, 1u> &table) {
@@ -235,9 +205,6 @@ __global__ void gamma_kernel(T const *zero_moment, T const *first_moment, T cons
 	gamma[shift] = - T(1.25331414) / k_betta * (k_betta * first_moment_derive - zero_moment[shift]) / dispersion_derive[shift];
 }
 
-#include "SimpleTable.h"
-#include "SimpleTableIO.h"
-
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -256,7 +223,7 @@ std::istream &ZFuncImport(std::istream &binary_is, iki::UniformSimpleTable<T, 1u
 template <typename T>
 class AnalyticalMoments final {
 public:
-	AnalyticalMoments(PhysicalParameters<T> p) : p(p) { }
+	AnalyticalMoments(iki::whfi::PhysicalParameters<T> p) : p(p) { }
 
 	std::vector<T> g(T vparall_begin, T vparall_step, unsigned size) const {
 		auto g_vparall = [this] (T vparall) {
@@ -279,7 +246,7 @@ public:
 	}
 
 private:
-	PhysicalParameters<T> p;
+	iki::whfi::PhysicalParameters<T> p;
 };
 
 #include <chrono>
@@ -288,21 +255,7 @@ int main() {
 	using namespace std;
 	using namespace iki;
 
-	PhysicalParameters<float> params = init_parameters(0.85f, 1.f / 0.85f, 0.25f, -9.f);
-	/*AnalyticalMoments<float> moments(params);
-	vector<float> g, G;
-	float vparall_begin = -0.9f, vparall_step = -15.f / 1023;
-	g = moments.g(-0.9f, -15.f / 1023, 1024);
-	G = moments.G(-0.9f, -15.f / 1023, 1024);
-
-	{
-		ofstream ascii_os("./data/analytical_moments.txt");
-		ascii_os.precision(7); ascii_os.setf(ios::fixed, ios::floatfield);
-		for (unsigned idx = 0; idx != 1024; ++idx) {
-			ascii_os << (vparall_begin + vparall_step * idx) << " " << g[idx] << " " << G[idx] << endl;
-		}
-	}
-	return 0;*/
+	whfi::PhysicalParameters<float> params = whfi::init_parameters(0.85f, 1.f / 0.85f, 0.25f, -9.f);
 
 	/* Load ZFunc table */
 	UniformSimpleTable<float, 1u, 1u> zfunc_table;

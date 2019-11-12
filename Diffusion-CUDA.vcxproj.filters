@@ -16,6 +16,9 @@
     <Filter Include="Table">
       <UniqueIdentifier>{ca91647c-274c-40a6-94e4-dba5135825b8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="WHFI">
+      <UniqueIdentifier>{a5fa9700-48d4-4b23-b902-879bf829518c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Transpose.cuh">
@@ -85,6 +88,9 @@
     </ClInclude>
     <ClInclude Include="GammaPivotImport.h">
       <Filter>Diffusion</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicalParameters.h">
+      <Filter>WHFI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -25,6 +25,7 @@
     <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh" />
     <ClInclude Include="InitialDataImport.h" />
     <ClInclude Include="MixedTermDiscretization.cuh" />
+    <ClInclude Include="PhysicalParameters.h" />
     <ClInclude Include="SimpleTable.h" />
     <ClInclude Include="SimpleTableIO.h" />
     <ClInclude Include="SimpleTwoDimensionalSolver.cuh" />
