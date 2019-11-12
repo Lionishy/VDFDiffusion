@@ -7,9 +7,9 @@
 namespace iki { namespace math { namespace device { 
 	template <typename T>
 	__device__ void zero_moment(T const *f, T start, T dx, unsigned size, unsigned stride, T *s, T *r) {
-
-		T sum = T(0), rem = T(0), y, t;
+		T sum = T(0), rem = T(0);
 		for (unsigned idx = 0, end = size * stride; idx != end; idx += stride) {
+			T y, t;
 			y = f[idx] - rem;
 			t = sum + y;
 			rem = (t - sum) - y;
