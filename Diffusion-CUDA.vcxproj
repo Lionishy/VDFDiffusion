@@ -41,6 +41,7 @@
     <ClInclude Include="ZFunc.cuh" />
     <ClInclude Include="ZFuncImport.h" />
     <ClInclude Include="ZFuncRungeKuttaSequence.h" />
+    <ClInclude Include="ZFuncTabulator.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />
