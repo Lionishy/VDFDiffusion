@@ -113,6 +113,9 @@
     <ClInclude Include="ZFuncTabulator.h">
       <Filter>ZFunc</Filter>
     </ClInclude>
+    <ClInclude Include="ZFuncCalculation.h">
+      <Filter>ZFunc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />
