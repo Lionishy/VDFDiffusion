@@ -146,18 +146,7 @@ private:
 };
 
 #include "ZeroMomentKernel.cuh"
-#include "FirstMoment.cuh"
-
-
-
-template <typename T>
-__global__ void first_moment_kernel(T const *f, T start, T dx, unsigned x_size, unsigned y_size, T *first_moment) {
-	unsigned shift = blockIdx.x * blockDim.x + threadIdx.x;
-	T s, rem;
-	iki::math::device::first_moment(f + shift + y_size, start, dx, x_size - 2, y_size, &s, &rem);
-	s -= T(0.5) * (*(f + shift) * start + *(f + shift + y_size * (x_size - 1)) * (start + dx * (x_size - 1)));
-	*(first_moment + shift) = s * dx;
-}
+#include "FirstMomentKernel.cuh"
 
 template <typename T>
 __global__ void gamma_kernel(T const *zero_moment, T const *first_moment, T const *omega, T const *dispersion_derive, T vparall_begin, T vparall_step, unsigned size, T *gamma) {
