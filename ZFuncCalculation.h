@@ -3,6 +3,7 @@
 #define ZFuncCalculation_H
 
 #include "SimpleTable.h"
+#include "ZFuncTabulator.h"
 
 #include <vector>
 

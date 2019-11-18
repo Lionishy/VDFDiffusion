@@ -40,6 +40,7 @@
     <ClInclude Include="ZeroMoment.cuh" />
     <ClInclude Include="ZFunc.cuh" />
     <ClInclude Include="ZFuncCalculation.h" />
+    <ClInclude Include="ZFuncExport.h" />
     <ClInclude Include="ZFuncImport.h" />
     <ClInclude Include="ZFuncRungeKuttaSequence.h" />
     <ClInclude Include="ZFuncTabulator.h" />
