@@ -180,38 +180,6 @@ __global__ void gamma_kernel(T const *zero_moment, T const *first_moment, T cons
 #include <iostream>
 #include <fstream>
 #include <vector>
-
-
-
-template <typename T>
-class AnalyticalMoments final {
-public:
-	AnalyticalMoments(iki::whfi::PhysicalParameters<T> p) : p(p) { }
-
-	std::vector<T> g(T vparall_begin, T vparall_step, unsigned size) const {
-		auto g_vparall = [this] (T vparall) {
-			return p.nc * std::exp(-pow<2>(vparall - p.bulk_to_term_c) / T(2.)) + p.nh * std::sqrt(p.TcTh_ratio) * exp(-pow<2>(vparall * std::sqrt(p.TcTh_ratio) - p.bulk_to_term_h) / T(2.));
-		};
-		std::vector<T> table(size);
-		for (unsigned count = 0u; count < size; ++count)
-			table[count] = g_vparall(vparall_begin + vparall_step * count);
-		return table;
-	}
-
-	std::vector<T> G(T vparall_begin, T vparall_step, unsigned size) const {
-		auto G_vparall = [this] (T vparall) {
-			return p.nc * std::exp(-pow<2>(vparall - p.bulk_to_term_c) / T(2.)) + p.nh * std::sqrt(T(1.) / p.TcTh_ratio) * exp(-pow<2>(vparall * std::sqrt(p.TcTh_ratio) - p.bulk_to_term_h) / T(2.));
-		};
-		std::vector<T> table(size);
-		for (unsigned count = 0u; count < size; ++count)
-			table[count] = G_vparall(vparall_begin + vparall_step * count);
-		return table;
-	}
-
-private:
-	iki::whfi::PhysicalParameters<T> p;
-};
-
 #include <chrono>
 
 int main() {

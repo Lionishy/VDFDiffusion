@@ -119,6 +119,9 @@
     <ClInclude Include="ZFuncExport.h">
       <Filter>ZFunc</Filter>
     </ClInclude>
+    <ClInclude Include="AnalyticalMoments.h">
+      <Filter>WHFI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />
