@@ -39,6 +39,7 @@
     <ClInclude Include="Transpose.cuh" />
     <ClInclude Include="AbstractTwoDimensionalSolver.cuh" />
     <ClInclude Include="ZeroMoment.cuh" />
+    <ClInclude Include="ZeroMomentKernel.cuh" />
     <ClInclude Include="ZFunc.cuh" />
     <ClInclude Include="ZFuncCalculation.h" />
     <ClInclude Include="ZFuncExport.h" />
