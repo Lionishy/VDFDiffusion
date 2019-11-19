@@ -22,6 +22,9 @@
     <Filter Include="ZFunc">
       <UniqueIdentifier>{fc2a34e0-215a-4274-9012-1b2e62d3b6a2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Math\Kernel">
+      <UniqueIdentifier>{f78b538d-e938-42a0-aa05-163267b94549}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Transpose.cuh">
@@ -31,9 +34,6 @@
       <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="ThomsonSolver.cuh">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="ThomsonSolverKernel.cuh">
       <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="DeviceMemory.h" />
@@ -122,14 +122,17 @@
     <ClInclude Include="AnalyticalMoments.h">
       <Filter>WHFI</Filter>
     </ClInclude>
-    <ClInclude Include="ZeroMomentKernel.cuh">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="FirstMomentKernel.cuh">
-      <Filter>Math</Filter>
-    </ClInclude>
     <ClInclude Include="GammaKernel.cuh">
       <Filter>WHFI</Filter>
+    </ClInclude>
+    <ClInclude Include="FirstMomentKernel.cuh">
+      <Filter>Math\Kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="ZeroMomentKernel.cuh">
+      <Filter>Math\Kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="ThomsonSolverKernel.cuh">
+      <Filter>Math\Kernel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
