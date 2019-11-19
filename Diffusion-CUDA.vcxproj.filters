@@ -134,6 +134,9 @@
     <ClInclude Include="ThomsonSolverKernel.cuh">
       <Filter>Math\Kernel</Filter>
     </ClInclude>
+    <ClInclude Include="DiffusionRecalculationTwoDimensionalSolver.cuh">
+      <Filter>Diffusion</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />
