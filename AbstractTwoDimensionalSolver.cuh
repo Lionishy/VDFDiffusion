@@ -33,12 +33,6 @@ namespace iki { namespace diffusion {
 				d = c + matrix_size;
 			}
 
-			//precaution to avoid unintended usage of copy / assign / move
-			AbstractTwoDimensionalSolver(AbstractTwoDimensionalSolver const &src) = delete;
-			AbstractTwoDimensionalSolver& operator=(AbstractTwoDimensionalSolver const &src) = delete;
-			AbstractTwoDimensionalSolver(AbstractTwoDimensionalSolver &&src) = delete;
-			AbstractTwoDimensionalSolver& operator=(AbstractTwoDimensionalSolver &&src) = delete;
-
 			//initial data copy
 			{
 				cudaError_t cudaStatus;
@@ -54,6 +48,12 @@ namespace iki { namespace diffusion {
 			f_prev = f_prev_full + y_size + 1, f_curr = f_curr_full + y_size + 1, f_tmp = f_tmp_full + y_size + 1;
 			x_dfc += y_size + 1, y_dfc += x_size + 1, xy_dfc += y_size + 1, yx_dfc += x_size + 1;
 		}
+
+		//precaution to avoid unintended usage of copy / assign / move
+		AbstractTwoDimensionalSolver(AbstractTwoDimensionalSolver const &src) = delete;
+		AbstractTwoDimensionalSolver &operator=(AbstractTwoDimensionalSolver const &src) = delete;
+		AbstractTwoDimensionalSolver(AbstractTwoDimensionalSolver &&src) = delete;
+		AbstractTwoDimensionalSolver &operator=(AbstractTwoDimensionalSolver &&src) = delete;
 
 		void cycle_transpose(size_t x_size, size_t y_size) final {
 			{
