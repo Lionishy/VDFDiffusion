@@ -33,12 +33,6 @@ namespace iki { namespace diffusion {
 				d = c + matrix_size;
 			}
 
-			//precaution to avoid unintended usage of copy / assign / move
-			AbstractTwoDimensionalSolver(AbstractTwoDimensionalSolver const &src) = delete;
-			AbstractTwoDimensionalSolver& operator=(AbstractTwoDimensionalSolver const &src) = delete;
-			AbstractTwoDimensionalSolver(AbstractTwoDimensionalSolver &&src) = delete;
-			AbstractTwoDimensionalSolver& operator=(AbstractTwoDimensionalSolver &&src) = delete;
-
 			//initial data copy
 			{
 				cudaError_t cudaStatus;
@@ -55,7 +49,13 @@ namespace iki { namespace diffusion {
 			x_dfc += y_size + 1, y_dfc += x_size + 1, xy_dfc += y_size + 1, yx_dfc += x_size + 1;
 		}
 
-		void cycle_transpose(size_t x_size, size_t y_size) final {
+		//precaution to avoid unintended usage of copy / assign / move
+		AbstractTwoDimensionalSolver(AbstractTwoDimensionalSolver const &src) = delete;
+		AbstractTwoDimensionalSolver &operator=(AbstractTwoDimensionalSolver const &src) = delete;
+		AbstractTwoDimensionalSolver(AbstractTwoDimensionalSolver &&src) = delete;
+		AbstractTwoDimensionalSolver &operator=(AbstractTwoDimensionalSolver &&src) = delete;
+
+		void cycle_transpose(size_t x_size, size_t y_size) {
 			{
 				cudaError_t cudaStatus;
 				if (cudaSuccess != (cudaStatus = iki::diffusion::cyclic_grids_transpose<32u, 8u>(f_prev_full, f_curr_full, f_tmp_full, x_size, y_size))) throw DeviceException(cudaStatus);
@@ -71,7 +71,7 @@ namespace iki { namespace diffusion {
 			f_tmp = f_tmp_full + x_size + 1;
 		}
 
-		void forward_step(T *x_dfc, T *y_dfc, T *xy_dfc, T *yx_dfc, T rx, T ry, size_t x_size, size_t y_size) final {
+		void forward_step(T *x_dfc, T *y_dfc, T *xy_dfc, T *yx_dfc, T rx, T ry, size_t x_size, size_t y_size) {
 			cudaError_t cudaStatus;
 			int blockDim = 1, threads = x_size - 2;
 
@@ -82,7 +82,7 @@ namespace iki { namespace diffusion {
 			if (cudaSuccess != (cudaStatus = cudaGetLastError())) throw DeviceException(cudaStatus);
 		}
 
-		void forward_step_with_mixed_terms_correction(T *x_dfc, T *y_dfc, T *xy_dfc, T *yx_dfc, T rx, T ry, size_t x_size, size_t y_size) final {
+		void forward_step_with_mixed_terms_correction(T *x_dfc, T *y_dfc, T *xy_dfc, T *yx_dfc, T rx, T ry, size_t x_size, size_t y_size) {
 			cudaError_t cudaStatus;
 			int blockDim = 1, threads = x_size - 2;
 
@@ -96,7 +96,7 @@ namespace iki { namespace diffusion {
 			if (cudaSuccess != (cudaStatus = cudaGetLastError())) throw DeviceException(cudaStatus);
 		}
 
-		void correction_step(T *y_dfc, T ry, size_t x_size, size_t y_size) final {
+		void correction_step(T *y_dfc, T ry, size_t x_size, size_t y_size) {
 			cudaError_t cudaStatus;
 			int blockDim = 1, threads = x_size - 2; 
 
