@@ -21,7 +21,7 @@ std::ostream& operator<<(std::ostream &ascii_os, iki::UniformSimpleTable<T, Dim,
 	
 	Index<Dim> expanded_index = first_index<Dim>();
 	for (auto it = table.data, end = table.data + collapsed_size<Dim>(&table.bounds)*Scale; it != end;) {
-		for (size_t arg_idx = 0u; arg_idx != Dim; ++arg_idx)
+		//for (size_t arg_idx = 0u; arg_idx != Dim; ++arg_idx)
 			ascii_os << uniform_argument<T,Dim>(&expanded_index,&table.space) << ' ';
 		for (size_t scale_counter = 0u; scale_counter != Scale; ++scale_counter)
 			ascii_os << *it++ << ' ';
