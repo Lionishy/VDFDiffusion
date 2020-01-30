@@ -155,13 +155,13 @@ private:
 #include <vector>
 #include <chrono>
 
-int main1() {
+/*int main() {
 	using namespace std;
 	using namespace iki;
 
 	whfi::PhysicalParameters<float> params = whfi::init_parameters(0.85f, 1.f / 0.85f, 0.25f, -9.f);
 
-	/* Load ZFunc table */
+	// Load ZFunc table
 	UniformSimpleTable<float, 1u, 1u> zfunc_table;
 	vector<float> zfunc_data;
 	try {
@@ -322,4 +322,4 @@ Clear:
 
 End:;
 	return 0;
-}
+}*/
