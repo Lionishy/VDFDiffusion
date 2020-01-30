@@ -137,5 +137,6 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />
+    <CudaCompile Include="DuffusionStepTest.cu" />
   </ItemGroup>
 </Project>

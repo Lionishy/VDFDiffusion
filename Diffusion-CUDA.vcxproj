@@ -50,6 +50,7 @@
     <ClInclude Include="ZFuncTabulator.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="DuffusionStepTest.cu" />
     <CudaCompile Include="GammaRecalculation.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
