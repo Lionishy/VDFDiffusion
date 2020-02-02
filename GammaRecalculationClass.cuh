@@ -1,12 +1,8 @@
 #include "DeviceMemory.h"
 #include "SimpleTable.h"
-
 #include "ZeroMoment.cuh"
 #include "FirstMoment.cuh"
-
-
-
-
+#include "AmplitudeKernel.cuh"
 
 namespace iki { namespace whfi {
 	template <typename T>
@@ -28,12 +24,9 @@ namespace iki { namespace whfi {
 			math::device:first_moment_kernel <<<1, size.components[1]>>> (vdf, velocity_space.axes[0].begin, velocity_space.axes[0].step, size.components[0], size.components[1], first_moment);
 
 			device::gamma_kernel << 1, size.components[1] >> > (zero_moment, first_index, k_betta, dispersion_derivative, velocity_space.axes[1].step, size.components[1], growth_rate_spectrum);
+
+			device::amplitude_update_kernell <<<1, size.components[1] >>> (growth_rate_spectrum, amplitude_spectrum, dt, size.components[1]);
 		}
-
-		void amplitude_update() {
-
-		}
-
 	};
 
 } /*whfi*/ } /*iki*/
