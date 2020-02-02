@@ -137,6 +137,9 @@
     <ClInclude Include="GammaRecalculationClass.cuh">
       <Filter>WHFI</Filter>
     </ClInclude>
+    <ClInclude Include="AmplitudeKernel.cuh">
+      <Filter>WHFI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />

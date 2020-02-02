@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AmplitudeKernel.cuh" />
     <ClInclude Include="AnalyticalMoments.h" />
     <ClInclude Include="CorrectionStepKernel.cuh" />
     <ClInclude Include="CorrectionStepTridiagonalMatrixCalculation.cuh" />
