@@ -26,6 +26,7 @@
     <ClInclude Include="ForwardStepCorrectionKernel.cuh" />
     <ClInclude Include="ForwardStepKernel.cuh" />
     <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh" />
+    <ClInclude Include="GammaRecalculationClass.cuh" />
     <ClInclude Include="InitialDataImport.h" />
     <ClInclude Include="KahanTabulator.h" />
     <ClInclude Include="MixedTermDiscretization.cuh" />
