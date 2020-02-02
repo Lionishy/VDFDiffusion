@@ -1,6 +1,7 @@
 #include "DeviceMemory.h"
 #include "SimpleTable.h"
 
+#include "ZeroMoment.cuh"
 #include "FirstMoment.cuh"
 
 
@@ -23,10 +24,10 @@ namespace iki { namespace whfi {
 		UniformSpace<T, 2u> velocity_space;
 
 		void growth_rate_update() {
-			zero_moment_kernel << <1, size.components[1] >> > (vdf, velocity_space.axes[0].begin, velocity_space.axes[0].step, size.components[0], size.components[1], zero_moment);
-			first_moment_kernel <<<1, size.components[1]>>> (vdf, velocity_space.axes[0].begin, velocity_space.axes[0].step, size.components[0], size.components[1], first_moment);
+			math::device::zero_moment_kernel << <1, size.components[1] >> > (vdf, velocity_space.axes[0].begin, velocity_space.axes[0].step, size.components[0], size.components[1], zero_moment);
+			math::device:first_moment_kernel <<<1, size.components[1]>>> (vdf, velocity_space.axes[0].begin, velocity_space.axes[0].step, size.components[0], size.components[1], first_moment);
 
-			gamma_kernel << 1, size.components[1] >> > (zero_moment, first_index, k_betta, dispersion_derivative, velocity_space.axes[1].step, size.components[1], growth_rate_spectrum);
+			device::gamma_kernel << 1, size.components[1] >> > (zero_moment, first_index, k_betta, dispersion_derivative, velocity_space.axes[1].step, size.components[1], growth_rate_spectrum);
 		}
 
 		void amplitude_update() {
