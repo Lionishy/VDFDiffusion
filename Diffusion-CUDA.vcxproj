@@ -19,6 +19,7 @@
     <ClInclude Include="DeviceException.h" />
     <ClInclude Include="DeviceMemory.h" />
     <ClInclude Include="DiagonalDiscretization.cuh" />
+    <ClInclude Include="DiffusionCoefficientMultiplicationKernel.cuh" />
     <ClInclude Include="FirstMomentKernel.cuh" />
     <ClInclude Include="GammaKernel.cuh" />
     <ClInclude Include="GammaPivotImport.h" />

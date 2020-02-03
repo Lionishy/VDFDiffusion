@@ -140,6 +140,9 @@
     <ClInclude Include="AmplitudeKernel.cuh">
       <Filter>WHFI</Filter>
     </ClInclude>
+    <ClInclude Include="DiffusionCoefficientMultiplicationKernel.cuh">
+      <Filter>WHFI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />
