@@ -3,6 +3,7 @@
 #include "ZeroMoment.cuh"
 #include "FirstMoment.cuh"
 #include "AmplitudeKernel.cuh"
+#include "DiffusionCoefficientMultiplicationKernel.cuh"
 #include "DeviceException.h"
 
 #include <vector>
@@ -60,6 +61,10 @@ namespace iki { namespace whfi {
 			device::gamma_kernel <<<1,vparall_size>>> (zero_moment, first_moment, k_betta, dispersion_derivative, velocity_space.axes[1].step, vparall_size, growth_rate_spectrum);
 
 			device::amplitude_update_kernell <<<1,vparall_size>>> (growth_rate_spectrum, amplitude_spectrum, dt, vparall_size);
+			device::amplitude_update_kernell <<<1,vparall_size>>> (x_dfc, x_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
+			device::amplitude_update_kernell <<<1,vparall_size>>> (y_dfc, y_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
+			device::amplitude_update_kernell <<<1,vparall_size>>> (xy_dfc, xy_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
+			device::amplitude_update_kernell <<<1,vparall_size>>> (yx_dfc, yx_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
 		}
 	};
 
