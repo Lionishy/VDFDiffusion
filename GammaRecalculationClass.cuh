@@ -31,6 +31,14 @@ namespace iki { namespace whfi {
 			}
 		}
 
+		void external_memory_init(T const *vdf_ext, T *x_dfc_ext, T *y_dfc_ext, T *xy_dfc_ext, T *yx_dfc_ext) {
+			vdf = vdf_ext;
+			x_dfc = x_dfc_ext;
+			y_dfc = y_dfc_ext;
+			xy_dfc = xy_dfc_ext;
+			yx_dfc = yx_dfc_ext;
+		}
+
 		size_t vperp_size, vparall_size; //vperp - x; vparall - y
 		UniformSpace<T, 2u> velocity_space; //vperp - 0, vparall - 1
 		T dt;
