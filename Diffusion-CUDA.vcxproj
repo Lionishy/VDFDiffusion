@@ -30,6 +30,7 @@
     <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh" />
     <ClInclude Include="GammaRecalculationClass.cuh" />
     <ClInclude Include="InitialDataImport.h" />
+    <ClInclude Include="InitialParametersCalculationClass.cuh" />
     <ClInclude Include="KahanTabulator.h" />
     <ClInclude Include="MixedTermDiscretization.cuh" />
     <ClInclude Include="PhysicalParameters.h" />
