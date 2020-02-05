@@ -29,6 +29,8 @@
     <ClInclude Include="ForwardStepKernel.cuh" />
     <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh" />
     <ClInclude Include="GammaRecalculationClass.cuh" />
+    <ClInclude Include="ResonantVelocityEqn.h" />
+    <ClInclude Include="InitialConditionsClass.cuh" />
     <ClInclude Include="InitialDataImport.h" />
     <ClInclude Include="InitialParametersCalculationClass.cuh" />
     <ClInclude Include="KahanTabulator.h" />
@@ -47,6 +49,7 @@
     <ClInclude Include="ZeroMoment.cuh" />
     <ClInclude Include="ZeroMomentKernel.cuh" />
     <ClInclude Include="ZFunc.cuh" />
+    <ClInclude Include="ZFunc.h" />
     <ClInclude Include="ZFuncCalculation.h" />
     <ClInclude Include="ZFuncExport.h" />
     <ClInclude Include="ZFuncImport.h" />

@@ -143,6 +143,16 @@
     <ClInclude Include="DiffusionCoefficientMultiplicationKernel.cuh">
       <Filter>WHFI</Filter>
     </ClInclude>
+    <ClInclude Include="InitialParametersCalculationClass.cuh" />
+    <ClInclude Include="InitialConditionsClass.cuh">
+      <Filter>WHFI</Filter>
+    </ClInclude>
+    <ClInclude Include="ZFunc.h">
+      <Filter>ZFunc</Filter>
+    </ClInclude>
+    <ClInclude Include="ResonantVelocityEqn.h">
+      <Filter>WHFI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />
