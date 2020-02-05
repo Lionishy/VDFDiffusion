@@ -17,10 +17,10 @@ namespace iki { namespace whfi {
 				+ params.nh / (k_betta_h) * (-Zh + (omega / (k_betta_h) - params.bulk_to_term_h) * (Zh * arg_h + T(1.)));
 		}
 
-		DispersionRelationOmegaDerivative(ZFunc Z, PhysicalParameters<T> params) : Z(Z), params(params) { }
+		DispersionRelationOmegaDerivative(ZFunc<T> Z, PhysicalParameters<T> params) : Z(Z), params(params) { }
 
 	private:
-		ZFunc Z;
+		ZFunc<T> Z;
 		PhysicalParameters<T> params;
 	};
 } /*whfi*/ } /*iki*/
