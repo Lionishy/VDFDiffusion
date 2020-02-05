@@ -159,6 +159,9 @@
     <ClInclude Include="DispersionRelationOmegaDerive.h">
       <Filter>WHFI</Filter>
     </ClInclude>
+    <ClInclude Include="DispersionRelationKDerive.h">
+      <Filter>WHFI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />

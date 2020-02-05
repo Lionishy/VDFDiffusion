@@ -20,6 +20,7 @@
     <ClInclude Include="DeviceMemory.h" />
     <ClInclude Include="DiagonalDiscretization.cuh" />
     <ClInclude Include="DiffusionCoefficientMultiplicationKernel.cuh" />
+    <ClInclude Include="DispersionRelationKDerive.h" />
     <ClInclude Include="DispersionRelationOmegaDerive.h" />
     <ClInclude Include="FirstMomentKernel.cuh" />
     <ClInclude Include="GammaKernel.cuh" />
