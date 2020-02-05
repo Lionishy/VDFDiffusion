@@ -156,6 +156,9 @@
     <ClInclude Include="StepSolver.h">
       <Filter>Math</Filter>
     </ClInclude>
+    <ClInclude Include="DispersionRelationOmegaDerive.h">
+      <Filter>WHFI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />
