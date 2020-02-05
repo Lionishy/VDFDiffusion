@@ -153,6 +153,9 @@
     <ClInclude Include="ResonantVelocityEqn.h">
       <Filter>WHFI</Filter>
     </ClInclude>
+    <ClInclude Include="StepSolver.h">
+      <Filter>Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />

@@ -40,6 +40,7 @@
     <ClInclude Include="SimpleTable.h" />
     <ClInclude Include="SimpleTableIO.h" />
     <ClInclude Include="SimpleTwoDimensionalSolver.cuh" />
+    <ClInclude Include="StepSolver.h" />
     <ClInclude Include="StridedThomsonSolver.cuh" />
     <ClInclude Include="ForwardStepTridiagonalMatrixCalculation.cuh" />
     <ClInclude Include="ThomsonSolver.cuh" />
