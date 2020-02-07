@@ -50,14 +50,13 @@ namespace iki { namespace whfi {
 					result.Dpr.push_back(Dpr);
 				}
 				catch (std::exception const &ex) {
-					std::cout << ex.what() << endl;
+					std::cout << ex.what() << std::endl;
 					std::stringstream error_stream;
 					error_stream << "v_res = " << v_res << "  count = " << count;
 					throw std::runtime_error(error_stream.str());
 				}
-
-				return result;
 			}
+			return result;
 		}
 
 		InitialConditionsCalculation(ZFunc<T> Z): Z(Z) { }
