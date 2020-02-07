@@ -1,4 +1,4 @@
-#include "SimpleTwoDimensionalSolver.cuh"
+/*#include "SimpleTwoDimensionalSolver.cuh"
 #include "DiffusionTest.h"
 #include "SimpleTable.h"
 #include "SimpleTableIO.h"
@@ -60,4 +60,4 @@ int main() {
 	}
 
 	return 0;
-}
+}*/
