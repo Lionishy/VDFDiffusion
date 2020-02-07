@@ -30,7 +30,7 @@ namespace iki { namespace whfi {
 		p.betta_root_c = std::sqrt(T(0.5) * betta_c);
 		p.betta_root_h = std::sqrt(T(0.5) * betta_c) / p.TcTh_ratio_root;
 		p.bulk_to_term_c = bulk_to_alfven_c / p.betta_root_c * std::sqrt(T(1. / 1836.));
-		p.bulk_to_term_h = -(nc / p.nh) * p.bulk_to_term_c * TcTh_ratio_root;
+		p.bulk_to_term_h = -(nc / p.nh) * p.bulk_to_term_c * p.TcTh_ratio_root;
 
 		return p;
 	}
