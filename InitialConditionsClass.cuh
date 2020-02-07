@@ -60,10 +60,10 @@ namespace iki { namespace whfi {
 			}
 		}
 
-		InitialConditionsCalculation(ZFunc Z): Z(Z) { }
+		InitialConditionsCalculation(ZFunc<T> Z): Z(Z) { }
 
 	private:
-		ZFunc Z;
+		ZFunc<T> Z;
 	};
 } /*whif*/ } /*iki*/
 
