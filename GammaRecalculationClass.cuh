@@ -10,9 +10,9 @@
 
 namespace iki { namespace whfi {
 	template <typename T>
-	struct GammaReclaculation {
+	struct GammaRecalculation {
 
-		GammaReclaculation(size_t vperp_size, size_t vparall_size, UniformSpace<T, 2u> velocity_space, T dt, std::vector<T> const &x_dfc_pivot_host, std::vector<T> const &y_dfc_pivot_host, std::vector<T> const &xy_dfc_pivot_host, std::vector<T> const &yx_dfc_pivot_host, std::vector<T> const &dispersion_derivative_host, std::vector<T> const &k_betta_host): 
+		GammaRecalculation(size_t vperp_size, size_t vparall_size, UniformSpace<T, 2u> velocity_space, T dt, std::vector<T> const &x_dfc_pivot_host, std::vector<T> const &y_dfc_pivot_host, std::vector<T> const &xy_dfc_pivot_host, std::vector<T> const &yx_dfc_pivot_host, std::vector<T> const &dispersion_derivative_host, std::vector<T> const &k_betta_host):
 			vperp_size(vperp_size), vparall_size(vparall_size), 
 			velocity_space(velocity_space), 
 			dt(dt), 
