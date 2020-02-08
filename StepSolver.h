@@ -8,11 +8,11 @@
 namespace iki { namespace math { 
 	template <typename T, typename Eqn_t>
 	T step_solver(Eqn_t f, T start, T step, T stop) {
-		unsigned count = 0; T arg_curr = start + step * count, arg_next = start + step * (count + 1);
+		unsigned count = 0; T arg_curr = start + step * count, arg_next = start + step * ++count;
 		T f_curr = f(arg_curr)
 		, f_next = f(arg_next);
 
-		while (arg_curr < stop) {
+		while (arg_next < stop) {
 			if (f_curr * f_next < T(0)) return T(0.5) * (arg_curr + arg_next);
 
 			arg_curr = arg_next;
