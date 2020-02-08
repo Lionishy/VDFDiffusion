@@ -32,9 +32,8 @@
     <ClInclude Include="ForwardStepTridiagonalMatrixCorrection.cuh" />
     <ClInclude Include="GammaRecalculationClass.cuh" />
     <ClInclude Include="ResonantVelocityEqn.h" />
-    <ClInclude Include="InitialConditionsClass.cuh" />
+    <ClInclude Include="InitialConditionsClass.h" />
     <ClInclude Include="InitialDataImport.h" />
-    <ClInclude Include="InitialParametersCalculationClass.cuh" />
     <ClInclude Include="KahanTabulator.h" />
     <ClInclude Include="MixedTermDiscretization.cuh" />
     <ClInclude Include="PhysicalParameters.h" />

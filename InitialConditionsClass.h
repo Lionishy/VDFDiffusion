@@ -1,6 +1,6 @@
 #pragma once
-#ifndef InitialConditionsClass_CUH
-#define InitialConditionsClass_CUH
+#ifndef InitialConditionsClass_H
+#define InitialConditionsClass_H
 
 #include "ZFunc.h"
 #include "SimpleTable.h"

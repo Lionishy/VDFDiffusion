@@ -143,10 +143,6 @@
     <ClInclude Include="DiffusionCoefficientMultiplicationKernel.cuh">
       <Filter>WHFI</Filter>
     </ClInclude>
-    <ClInclude Include="InitialParametersCalculationClass.cuh" />
-    <ClInclude Include="InitialConditionsClass.cuh">
-      <Filter>WHFI</Filter>
-    </ClInclude>
     <ClInclude Include="ZFunc.h">
       <Filter>ZFunc</Filter>
     </ClInclude>
@@ -160,6 +156,9 @@
       <Filter>WHFI</Filter>
     </ClInclude>
     <ClInclude Include="DispersionRelationKDerive.h">
+      <Filter>WHFI</Filter>
+    </ClInclude>
+    <ClInclude Include="InitialConditionsClass.h">
       <Filter>WHFI</Filter>
     </ClInclude>
   </ItemGroup>
