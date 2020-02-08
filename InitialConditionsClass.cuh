@@ -34,7 +34,7 @@ namespace iki { namespace whfi {
 			for (size_t count = 0; count != v_parall_size; ++count) {
 				T v_res = v_parall_begin + count * v_parall_step;
 				try {
-					T omega = math::step_solver(ResonantVelocityEqn<T>(v_res, params, Z), T(1.e-5), T(1.e-5), T(1. + 1.e-6));
+					T omega = math::step_solver(ResonantVelocityEqn<T>(v_res, params, Z), T(1.e-5), T(1.e-4), T(1.));
 					T k_betta = (omega - T(1.)) / v_res;
 					T dispersion_derivative = dr_omega_derive(omega, k_betta);
 					T group_velocity = -dr_k_derive(omega, k_betta) / dispersion_derivative;
