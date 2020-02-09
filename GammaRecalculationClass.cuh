@@ -1,7 +1,8 @@
 #include "DeviceMemory.h"
 #include "SimpleTable.h"
-#include "ZeroMoment.cuh"
-#include "FirstMoment.cuh"
+#include "ZeroMomentKernel.cuh"
+#include "FirstMomentKernel.cuh"
+#include "GammaKernel.cuh"
 #include "AmplitudeKernel.cuh"
 #include "DiffusionCoefficientMultiplicationKernel.cuh"
 #include "DeviceException.h"
@@ -18,7 +19,21 @@ namespace iki { namespace whfi {
 			dt(dt), 
 			vdf(nullptr), x_dfc(nullptr), y_dfc(nullptr), xy_dfc(nullptr), yx_dfc(nullptr), 
 			internal_device_memory(4*vperp_size*vparall_size*sizeof(T) + 6*vparall_size*sizeof(T)) {
+			
+			//internal memory addresses assignment
+			void *begin_memory = internal_device_memory.get();
+			x_dfc_pivot = (float *)begin_memory;
+			y_dfc_pivot = x_dfc_pivot + vperp_size * vparall_size;
+			xy_dfc_pivot = y_dfc_pivot + vperp_size * vparall_size;
+			yx_dfc_pivot = xy_dfc_pivot + vperp_size * vparall_size;
 
+			dispersion_derivative = yx_dfc_pivot + vperp_size * vparall_size;
+			k_betta = dispersion_derivative + vparall_size;
+			growth_rate_spectrum = k_betta + vparall_size;
+			amplitude_spectrum = growth_rate_spectrum + vparall_size;
+			zero_moment = amplitude_spectrum + vparall_size;
+			first_moment = zero_moment + vparall_size;
+			
 			//initial data copy
 			{
 				cudaError_t cudaStatus;
