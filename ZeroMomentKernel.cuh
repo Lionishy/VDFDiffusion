@@ -7,7 +7,7 @@
 #include <cuda_runtime.h>
 #include <cuda_device_runtime_api.h>
 
-namespace iki { namespace math { 
+namespace iki { namespace math { namespace device { 
 	template <typename T>
 	__global__ void zero_moment_kernel(T const *f, T start, T dx, unsigned x_size, unsigned y_size, T *zero_moment) {
 		unsigned shift = blockIdx.x * blockDim.x + threadIdx.x;
@@ -16,6 +16,6 @@ namespace iki { namespace math {
 		s -= T(0.5) * (*(f + shift) + *(f + shift + y_size * (x_size - 1)));
 		*(zero_moment + shift) = s * dx;
 	}
-} /* math */ } /* iki */
+} /*device*/ } /* math */ } /* iki */
 
 #endif /* ZeroMomentKernel_CUH */
