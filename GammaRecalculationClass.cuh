@@ -13,7 +13,7 @@ namespace iki { namespace whfi {
 	template <typename T>
 	struct GammaRecalculation {
 
-		GammaRecalculation(size_t vperp_size, size_t vparall_size, UniformSpace<T, 2u> velocity_space, T dt, std::vector<T> const &x_dfc_pivot_host, std::vector<T> const &y_dfc_pivot_host, std::vector<T> const &xy_dfc_pivot_host, std::vector<T> const &yx_dfc_pivot_host, std::vector<T> const &dispersion_derivative_host, std::vector<T> const &k_betta_host):
+		GammaRecalculation(size_t vperp_size, size_t vparall_size, UniformSpace<T, 2u> velocity_space, T dt, std::vector<T> const &x_dfc_pivot_host, std::vector<T> const &y_dfc_pivot_host, std::vector<T> const &xy_dfc_pivot_host, std::vector<T> const &yx_dfc_pivot_host, std::vector<T> const &dispersion_derivative_host, std::vector<T> const &k_betta_host, std::vector<T> const &amplitude_spectrum_host):
 			vperp_size(vperp_size), vparall_size(vparall_size), 
 			velocity_space(velocity_space), 
 			dt(dt), 
@@ -44,6 +44,7 @@ namespace iki { namespace whfi {
 
 				if (cudaSuccess != (cudaStatus = cudaMemcpy(dispersion_derivative, dispersion_derivative_host.data(), vparall_size * sizeof(T), cudaMemcpyHostToDevice))) throw DeviceException(cudaStatus);
 				if (cudaSuccess != (cudaStatus = cudaMemcpy(k_betta, k_betta_host.data(), vparall_size * sizeof(T), cudaMemcpyHostToDevice))) throw DeviceException(cudaStatus);
+				if (cudaSuccess != (cudaStatus = cudaMemcpy(amplitude_spectrum, amplitude_spectrum_host.data(), vparall_size * sizeof(T), cudaMemcpyHostToDevice))) throw DeviceException(cudaStatus);
 			}
 		}
 
@@ -76,10 +77,11 @@ namespace iki { namespace whfi {
 			device::gamma_kernel <<<1,vparall_size>>> (zero_moment, first_moment, k_betta, dispersion_derivative, velocity_space.axes[1].step, vparall_size, growth_rate_spectrum);
 
 			device::amplitude_update_kernell <<<1,vparall_size>>> (growth_rate_spectrum, amplitude_spectrum, dt, vparall_size);
-			device::amplitude_update_kernell <<<1,vparall_size>>> (x_dfc, x_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
-			device::amplitude_update_kernell <<<1,vparall_size>>> (y_dfc, y_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
-			device::amplitude_update_kernell <<<1,vparall_size>>> (xy_dfc, xy_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
-			device::amplitude_update_kernell <<<1,vparall_size>>> (yx_dfc, yx_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
+
+			device::diffusion_coefficient_multiplication_kernell <<<1,vparall_size>>> (x_dfc, x_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
+			device::diffusion_coefficient_multiplication_kernell <<<1,vparall_size>>> (y_dfc, y_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
+			device::diffusion_coefficient_multiplication_kernell <<<1,vparall_size>>> (xy_dfc, xy_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
+			device::diffusion_coefficient_multiplication_kernell <<<1,vparall_size>>> (yx_dfc, yx_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
 		}
 	};
 
