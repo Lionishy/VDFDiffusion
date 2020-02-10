@@ -71,8 +71,8 @@ namespace iki { namespace whfi {
 		
 
 		void growth_rate_update() {
-			math::device::zero_moment_kernel <<<1,vparall_size>>> (vdf, velocity_space.axes[0].begin, velocity_space.axes[0].step, vperp_size, vparall_size, zero_moment);
-			math::device::first_moment_kernel <<<1,vparall_size>>> (vdf, velocity_space.axes[0].begin, velocity_space.axes[0].step, vperp_size, vparall_size, first_moment);
+			math::device::zero_moment_kernel <<<1,vparall_size>>> (vdf, velocity_space.axes[1].begin, velocity_space.axes[1].step, vperp_size, vparall_size, zero_moment);
+			math::device::first_moment_kernel <<<1,vparall_size>>> (vdf, velocity_space.axes[1].begin, velocity_space.axes[1].step, vperp_size, vparall_size, first_moment);
 
 			device::gamma_kernel <<<1,vparall_size>>> (zero_moment, first_moment, k_betta, dispersion_derivative, velocity_space.axes[1].step, vparall_size, growth_rate_spectrum);
 
