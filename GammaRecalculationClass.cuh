@@ -78,10 +78,11 @@ namespace iki { namespace whfi {
 
 			device::amplitude_update_kernell <<<1,vparall_size>>> (growth_rate_spectrum, amplitude_spectrum, dt, vparall_size);
 
-			device::diffusion_coefficient_multiplication_kernell <<<1,vparall_size>>> (x_dfc, x_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
-			device::diffusion_coefficient_multiplication_kernell <<<1,vparall_size>>> (y_dfc, y_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
-			device::diffusion_coefficient_multiplication_kernell <<<1,vparall_size>>> (xy_dfc, xy_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
-			device::diffusion_coefficient_multiplication_kernell <<<1,vparall_size>>> (yx_dfc, yx_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
+			device::diffusion_coefficient_multiplication_kernell_parall_fast <<<1,vparall_size>>> (x_dfc, x_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
+			device::diffusion_coefficient_multiplication_kernell_parall_fast <<<1,vparall_size>>> (xy_dfc, xy_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
+
+			device::diffusion_coefficient_multiplication_kernell_perp_fast << <1, vparall_size >> > (y_dfc, y_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
+			device::diffusion_coefficient_multiplication_kernell_perp_fast <<<1,vparall_size>>> (yx_dfc, yx_dfc_pivot, amplitude_spectrum, vperp_size, vparall_size);
 		}
 	};
 
