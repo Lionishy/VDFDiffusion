@@ -57,7 +57,7 @@ namespace iki { namespace whfi {
 		}
 
 		size_t vperp_size, vparall_size; //vperp - x; vparall - y
-		UniformSpace<T, 2u> velocity_space; //vperp - 0, vparall - 1
+		UniformSpace<T, 2u> velocity_space; //vparall - 0, vperp - 1
 		T dt;
 
 		T const *vdf;                       //external memory to be read
@@ -74,7 +74,7 @@ namespace iki { namespace whfi {
 			math::device::zero_moment_kernel <<<1,vparall_size>>> (vdf, velocity_space.axes[1].begin, velocity_space.axes[1].step, vperp_size, vparall_size, zero_moment);
 			math::device::first_moment_kernel <<<1,vparall_size>>> (vdf, velocity_space.axes[1].begin, velocity_space.axes[1].step, vperp_size, vparall_size, first_moment);
 
-			device::gamma_kernel <<<1,vparall_size>>> (zero_moment, first_moment, k_betta, dispersion_derivative, velocity_space.axes[1].step, vparall_size, growth_rate_spectrum);
+			device::gamma_kernel <<<1,vparall_size>>> (zero_moment, first_moment, k_betta, dispersion_derivative, velocity_space.axes[0].step, vparall_size, growth_rate_spectrum);
 
 			device::amplitude_update_kernell <<<1,vparall_size>>> (growth_rate_spectrum, amplitude_spectrum, dt, vparall_size);
 
