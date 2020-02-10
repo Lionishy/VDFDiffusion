@@ -7,11 +7,19 @@
 
 namespace iki { namespace whfi { namespace device { 
 	template <typename T>
-	__global__ void diffusion_coefficient_multiplication_kernell(T *dfc, T const *dfc_pivot, T const *amplitude_spectrum, size_t vperp_size, size_t vparall_size) {
+	__global__ void diffusion_coefficient_multiplication_kernell_parall_fast(T *dfc, T const *dfc_pivot, T const *amplitude_spectrum, size_t vperp_size, size_t vparall_size) {
 		unsigned shift = blockIdx.x * blockDim.x + threadIdx.x;
 		T const coeff = amplitude_spectrum[shift];
 		for (size_t vperp_idx = 0; vperp_idx != vperp_size; ++vperp_idx) {
 			dfc[vperp_idx * vparall_size + shift] = dfc_pivot[vperp_idx * vparall_size + shift] * coeff;
+		}
+	}
+
+	template <typename T>
+	__global__ void diffusion_coefficient_multiplication_kernell_perp_fast(T *dfc, T const *dfc_pivot, T const *amplitude_spectrum, size_t vperp_size, size_t vparall_size) {
+		unsigned shift = blockIdx.x * blockDim.x + threadIdx.x;
+		for (size_t vparall_idx = 0; vparall_idx != vparall_size; ++vparall_idx) {
+			dfc[vparall_idx * vperp_size + shift] = dfc_pivot[vparall_idx * vperp_size + shift] * amplitude_spectrum[vparall_idx];
 		}
 	}
 } /*device*/ } /*whfi*/ } /*iki*/
