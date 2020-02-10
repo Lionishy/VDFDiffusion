@@ -51,14 +51,14 @@ public:
 		return table;
 	}
 
-	//sizes: 0 - vperp, 1 - vparall
+	//sizes: 0 - vparall, 1 - vperp
 	iki::UniformSimpleTable<T, 2u, 1u> vparall_near(iki::UniformSimpleTable<T, 2u, 1u> &table) {
-		for (unsigned vperp_counter = 0u; vperp_counter != table.bounds.components[0]; ++vperp_counter) {
-			for (unsigned vparall_counter = 0u; vparall_counter != table.bounds.components[1]; ++vparall_counter) {
-				table.data[vparall_counter + vperp_counter * table.bounds.components[1]] =
+		for (unsigned vperp_counter = 0u; vperp_counter != table.bounds.components[1]; ++vperp_counter) {
+			for (unsigned vparall_counter = 0u; vparall_counter != table.bounds.components[0]; ++vparall_counter) {
+				table.data[vparall_counter + vperp_counter * table.bounds.components[0]] =
 					vdf(
-						table.space.axes[0].begin + table.space.axes[0].step * vperp_counter
-						, table.space.axes[1].begin + table.space.axes[1].step * vparall_counter
+						table.space.axes[1].begin + table.space.axes[1].step * vperp_counter
+						, table.space.axes[0].begin + table.space.axes[0].step * vparall_counter
 					);
 			}
 		}
@@ -75,10 +75,11 @@ int main() {
 
 	whfi::PhysicalParameters<float> params = whfi::init_parameters(0.85f, 1.f / 0.85f, 0.25f, -9.f);
 	UniformSpace<float, 2u> v_space;
-	v_space.axes[0].begin = 0.f;
-	v_space.axes[0].step = 5e-2f;
-	v_space.axes[1].begin = -15.0f;
-	v_space.axes[1].step = 1.3e-2f;
+	v_space.axes[0].begin = -15.0f;
+	v_space.axes[0].step = 1.3e-2f;
+	v_space.axes[1].begin = 0.f;
+	v_space.axes[1].step = 5e-2f;
+	
 
 	// Load ZFunc table
 	UniformSimpleTable<float, 1u, 1u> zfunc_table;
@@ -99,7 +100,7 @@ int main() {
 	vector<float> x_dfc_pivot(1024 * 1024), y_dfc_pivot(1024 * 1024), xy_dfc_pivot(1024 * 1024), yx_dfc_pivot(1024 * 1024);
 	{
 		for (unsigned perp_count = 0; perp_count != 1024; ++perp_count) {
-			float v_perp = v_space.axes[0].begin + v_space.axes[0].step * perp_count;
+			float v_perp = v_space.axes[1].begin + v_space.axes[1].step * perp_count;
 			for (unsigned parall_count = 0; parall_count != 1024; ++parall_count) {
 				x_dfc_pivot[parall_count + perp_count * 1024] = result.Dpr[parall_count] ;
 				y_dfc_pivot[parall_count + perp_count * 1024] = result.Dpl[parall_count];
@@ -147,9 +148,9 @@ int main() {
 			}*/
 		}
 		gamma_recalc.growth_rate_update();
-
+		 
 		UniformSimpleTable<float, 1u, 2u> new_gamma_table;
-		new_gamma_table.space.axes[0] = v_space.axes[1];
+		new_gamma_table.space.axes[0] = v_space.axes[0];
 		new_gamma_table.bounds.components[0] = 1024;
 
 		vector<float> new_gamma(1024), new_k_betta(1024);
