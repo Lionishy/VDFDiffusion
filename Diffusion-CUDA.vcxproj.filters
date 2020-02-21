@@ -161,6 +161,10 @@
     <ClInclude Include="InitialConditionsClass.h">
       <Filter>WHFI</Filter>
     </ClInclude>
+    <ClInclude Include="VDFDiffusionTest.cuh" />
+    <ClInclude Include="VDFmu.h">
+      <Filter>WHFI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="GammaRecalculation.cu" />

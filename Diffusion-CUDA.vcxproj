@@ -48,6 +48,8 @@
     <ClInclude Include="ThomsonSolverKernel.cuh" />
     <ClInclude Include="Transpose.cuh" />
     <ClInclude Include="AbstractTwoDimensionalSolver.cuh" />
+    <ClInclude Include="VDFDiffusionTest.cuh" />
+    <ClInclude Include="VDFmu.h" />
     <ClInclude Include="ZeroMoment.cuh" />
     <ClInclude Include="ZeroMomentKernel.cuh" />
     <ClInclude Include="ZFunc.cuh" />
