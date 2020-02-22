@@ -60,8 +60,7 @@ int main2() {
 				y_dfc_pivot[parall_count * 1024 + perp_count] = Dpl * v_perp;
 				yx_dfc_pivot[parall_count * 1024 + perp_count ] = Dmx * v_perp;
 			}
-		}
-			
+		}	
 	}
 
 	cudaError_t cudaStatus;
@@ -91,7 +90,7 @@ int main2() {
 			vector<float> vdf_data(1024 * 1024);
 			vdf_table.data = vdf_data.data();
 
-			VDFUniformGridTabulator<float>(params).vparall_near(vdf_table);
+			whfi::VDFmuUniformGridTabulator<float>(params).vparall_near(vdf_table);
 			if (cudaSuccess != (cudaStatus = cudaMemcpy(vdf, vdf_table.data, 1024 * 1024 * sizeof(float), cudaMemcpyHostToDevice))) throw DeviceException(cudaStatus);
 
 			/*{
