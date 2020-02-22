@@ -48,7 +48,6 @@
     <ClInclude Include="ThomsonSolverKernel.cuh" />
     <ClInclude Include="Transpose.cuh" />
     <ClInclude Include="AbstractTwoDimensionalSolver.cuh" />
-    <ClInclude Include="VDFDiffusionTest.cuh" />
     <ClInclude Include="VDFmu.h" />
     <ClInclude Include="ZeroMoment.cuh" />
     <ClInclude Include="ZeroMomentKernel.cuh" />
@@ -64,6 +63,7 @@
     <CudaCompile Include="DuffusionStepTest.cu" />
     <CudaCompile Include="GammaRecalculation.cu" />
     <CudaCompile Include="InitialConditionsClassTest.cu" />
+    <CudaCompile Include="VDFDiffusionTest.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7E38C735-632B-4CA7-B815-453F9D480F8C}</ProjectGuid>
