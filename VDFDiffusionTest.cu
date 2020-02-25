@@ -2,6 +2,7 @@
 #include "SimpleTable.h"
 #include "PhysicalParameters.h"
 #include "VDFmu.h"
+#include "GammaRecalculationClass.cuh"
 
 #include "Pow.h"
 
@@ -29,8 +30,8 @@ void dfc_pivot_recalc(iki::UniformSimpleTable<float, 2u, 1u> const &vdf_table, s
 	for (unsigned perp_count = 0; perp_count != vdf_table.bounds.components[1]; ++perp_count) {
 		float v_perp = vdf_table.space.axes[1].begin + vdf_table.space.axes[1].step * perp_count;
 		for (unsigned parall_count = 0; parall_count != vdf_table.bounds.components[0]; ++parall_count) {
-			x_dfc[parall_count + perp_count * vdf_table.bounds.components[0]] = 1.e-4 * Dpr[parall_count] * v_perp;
-			xy_dfc[parall_count + perp_count * vdf_table.bounds.components[0]] = 1.e-4 * Dmx[parall_count] * v_perp;
+			x_dfc[parall_count + perp_count * vdf_table.bounds.components[0]] = Dpr[parall_count] * v_perp;
+			xy_dfc[parall_count + perp_count * vdf_table.bounds.components[0]] = Dmx[parall_count] * v_perp;
 
 		}
 	}
@@ -39,8 +40,8 @@ void dfc_pivot_recalc(iki::UniformSimpleTable<float, 2u, 1u> const &vdf_table, s
 		float const Dpl_ = Dpl[parall_count], Dmx_ = Dmx[parall_count];
 		for (unsigned perp_count = 0; perp_count != vdf_table.bounds.components[1]; ++perp_count) {
 			float v_perp = vdf_table.space.axes[1].begin + vdf_table.space.axes[1].step * perp_count;
-			y_dfc[parall_count * vdf_table.bounds.components[0] + perp_count] = 1.e-4 * Dpl_ * v_perp;
-			yx_dfc[parall_count * vdf_table.bounds.components[0] + perp_count] = 1.e-4 * Dmx_ * v_perp;
+			y_dfc[parall_count * vdf_table.bounds.components[0] + perp_count] = Dpl_ * v_perp;
+			yx_dfc[parall_count * vdf_table.bounds.components[0] + perp_count] = Dmx_ * v_perp;
 		}
 	}
 }
@@ -71,7 +72,7 @@ int main() {
 	VDFmuUniformGridTabulator<float>(params).vparall_near(vdf_table);
 	try { 
 		auto result = initial_conditions(params, vdf_table.space.axes[0], vdf_table.bounds.components[0]);
-		vector<float> x_dfc_pivot(collapsed_size(&vdf_table.bounds)), y_dfc_pivot(collapsed_size(&vdf_table.bounds)), xy_dfc_pivot(collapsed_size(&vdf_table.bounds)), yx_dfc_pivot(collapsed_size(&vdf_table.bounds));
+		vector<float> x_dfc_pivot(collapsed_size(&vdf_table.bounds)), y_dfc_pivot(collapsed_size(&vdf_table.bounds)), xy_dfc_pivot(collapsed_size(&vdf_table.bounds)), yx_dfc_pivot(collapsed_size(&vdf_table.bounds)), amplitude_spectrum(vdf_table.bounds.components[0],1.e-4);
 		dfc_pivot_recalc(vdf_table, result.Dpl, result.Dmx, result.Dpr, x_dfc_pivot, y_dfc_pivot, xy_dfc_pivot, yx_dfc_pivot);
 
 		cudaError_t cudaStatus;
@@ -79,6 +80,8 @@ int main() {
 			throw runtime_error(cudaGetErrorString(cudaStatus));
 
 		SimpleTwoDimensionalSolver<float> vdf_diffusor(vdf_table.bounds.components[0], vdf_table.bounds.components[1], rparall, rperp, vdf_vector, x_dfc_pivot, y_dfc_pivot, xy_dfc_pivot, yx_dfc_pivot);
+		GammaRecalculation<float> growthrate(vdf_table.bounds.components[1],vdf_table.bounds.components[0],vdf_table.space,dt,x_dfc_pivot,y_dfc_pivot,xy_dfc_pivot,yx_dfc_pivot,result.dispersion_derivative,result.k_betta, amplitude_spectrum);
+
 		
 		for (unsigned count = 0; count != 1000; ++count) {
 			vdf_diffusor.step();
