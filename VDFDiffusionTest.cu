@@ -81,6 +81,8 @@ int main() {
 
 		SimpleTwoDimensionalSolver<float> vdf_diffusor(vdf_table.bounds.components[0], vdf_table.bounds.components[1], rparall, rperp, vdf_vector, x_dfc_pivot, y_dfc_pivot, xy_dfc_pivot, yx_dfc_pivot);
 		GammaRecalculation<float> growthrate(vdf_table.bounds.components[1],vdf_table.bounds.components[0],vdf_table.space,dt,x_dfc_pivot,y_dfc_pivot,xy_dfc_pivot,yx_dfc_pivot,result.dispersion_derivative,result.k_betta, amplitude_spectrum);
+		growthrate.external_memory_init(vdf_diffusor.f_curr_full,vdf_diffusor.x_dfc,vdf_diffusor.y_dfc,vdf_diffusor.xy_dfc,vdf_diffusor.yx_dfc);
+		growthrate.growth_rate_update();
 
 		
 		for (unsigned count = 0; count != 1000; ++count) {
