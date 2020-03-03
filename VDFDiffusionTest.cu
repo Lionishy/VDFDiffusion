@@ -61,16 +61,25 @@ int main() {
 		vdf_table.space.axes[0].begin = -15.0f; //vparall
 		vdf_table.space.axes[0].step = 1.3e-2f;
 		vdf_table.space.axes[1].begin = 0.f;    //vperp
-		vdf_table.space.axes[1].step = 5e-2f;
+		vdf_table.space.axes[1].step = 3e-2f;
 		vdf_vector.resize(collapsed_size(&vdf_table.bounds));
 		vdf_table.data = vdf_vector.data();
 	}
 
-	float dt = 0.1f; //dt = 1./omega_c
+	float dt = 0.01; //dt = 1./omega_c
 	float rparall = dt / math::pow<2u>(vdf_table.space.axes[0].step), rperp = dt / math::pow<2u>(vdf_table.space.axes[1].step);
 
 	VDFmuUniformGridTabulator<float>(params).vparall_near(vdf_table);
 	try { 
+
+		{
+			ofstream ascii_os("./data/vdf_init.txt");
+			ascii_os.exceptions(ios::failbit | ios::badbit);
+			ascii_os.precision(7); ascii_os.setf(ios::scientific, ios::floatfield);
+			ascii_os << vdf_table;
+		}
+
+
 		auto result = initial_conditions(params, vdf_table.space.axes[0], vdf_table.bounds.components[0]);
 		vector<float> x_dfc_pivot(collapsed_size(&vdf_table.bounds)), y_dfc_pivot(collapsed_size(&vdf_table.bounds)), xy_dfc_pivot(collapsed_size(&vdf_table.bounds)), yx_dfc_pivot(collapsed_size(&vdf_table.bounds)), amplitude_spectrum(vdf_table.bounds.components[0],1.e-4);
 		dfc_pivot_recalc(vdf_table, result.Dpl, result.Dmx, result.Dpr, x_dfc_pivot, y_dfc_pivot, xy_dfc_pivot, yx_dfc_pivot);
@@ -85,9 +94,10 @@ int main() {
 		growthrate.growth_rate_update();
 
 		
-		for (unsigned count = 0; count != 1000; ++count) {
+		for (unsigned count = 0; count != 10'000; ++count) {
 			vdf_diffusor.step();
 			cudaDeviceSynchronize();
+			//growthrate.growth_rate_update();
 		}
 
 		if (cudaSuccess != (cudaStatus = cudaMemcpy(vdf_vector.data(), vdf_diffusor.f_curr_full, collapsed_size(&vdf_table.bounds) * sizeof(float), cudaMemcpyDeviceToHost))) throw DeviceException(cudaStatus);
@@ -99,7 +109,59 @@ int main() {
 			ascii_os << vdf_table;
 		}
 
+		/*{
+			UniformSimpleTable<float, 2u, 1u> x_dfc_table;
+			vector<float> x_dfc_vector;
+			{
+				x_dfc_table.bounds = vdf_table.bounds;
+				x_dfc_table.space = vdf_table.space;
+				x_dfc_vector.resize(collapsed_size(&x_dfc_table.bounds));
+				x_dfc_table.data = x_dfc_vector.data();
+			}
 
+			if (cudaSuccess != (cudaStatus = cudaMemcpy(x_dfc_vector.data(), vdf_diffusor.xy_dfc, collapsed_size(&x_dfc_table.bounds) * sizeof(float), cudaMemcpyDeviceToHost))) throw DeviceException(cudaStatus);
+
+			{
+				ofstream ascii_os("./data/x_dfc_result.txt");
+				ascii_os.exceptions(ios::failbit | ios::badbit);
+				ascii_os.precision(7); ascii_os.setf(ios::scientific, ios::floatfield);
+				ascii_os << x_dfc_table;
+			}
+		}
+
+		{
+			UniformSimpleTable<float, 2u, 1u> y_dfc_table;
+			vector<float> y_dfc_vector;
+			{
+				y_dfc_table.bounds = vdf_table.bounds;
+				y_dfc_table.space.axes[0] = vdf_table.space.axes[1];
+				y_dfc_table.space.axes[1] = vdf_table.space.axes[0];
+				y_dfc_vector.resize(collapsed_size(&y_dfc_table.bounds));
+				y_dfc_table.data = y_dfc_vector.data();
+			}
+
+			if (cudaSuccess != (cudaStatus = cudaMemcpy(y_dfc_vector.data(), vdf_diffusor.yx_dfc, collapsed_size(&y_dfc_table.bounds) * sizeof(float), cudaMemcpyDeviceToHost))) throw DeviceException(cudaStatus);
+
+			{
+				ofstream ascii_os("./data/y_dfc_result.txt");
+				ascii_os.exceptions(ios::failbit | ios::badbit);
+				ascii_os.precision(7); ascii_os.setf(ios::scientific, ios::floatfield);
+				ascii_os << y_dfc_table;
+			}
+		}
+
+		{
+			UniformSimpleTable<float, 1u, 1u> gr_table;
+			vector<float> gr_vector;
+			{
+				gr_table.bounds.components[0] = vdf_table.bounds.components[0];
+				gr_table.space.axes[0] = vdf_table.space.axes[0];
+				gr_vector.resize(collapsed_size(&gr_table.bounds));
+				gr_table.data = gr_vector.data();
+			}
+
+			if (cudaSuccess != (cudaStatus = cudaMemcpy(gr_vector.data(), growthrate.growth_rate_spectrum, collapsed_size(&gr_table.bounds) * sizeof(float), cudaMemcpyDeviceToHost))) throw DeviceException(cudaStatus);
+		}*/
 	}
 	catch (exception const &ex) {
 		cout << ex.what() << endl;
