@@ -11,6 +11,8 @@ namespace iki {	namespace whfi { namespace device {
 		unsigned shift = blockIdx.x * blockDim.x + threadIdx.x;
 		if (gamma[shift] > T(0.))
 			amplitude_spectrum[shift] += T(2.0) * dt * gamma[shift] * amplitude_spectrum[shift];
+		else
+			amplitude_spectrum[shift] = T(0);
 	}
 } /*device*/ } /*whfi*/ } /*iki*/
 
