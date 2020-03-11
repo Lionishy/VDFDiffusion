@@ -30,8 +30,8 @@ void dfc_pivot_recalc(iki::UniformSimpleTable<float, 2u, 1u> const &vdf_table, s
 	for (unsigned perp_count = 0; perp_count != vdf_table.bounds.components[1]; ++perp_count) {
 		float v_perp = vdf_table.space.axes[1].begin + vdf_table.space.axes[1].step * perp_count;
 		for (unsigned parall_count = 0; parall_count != vdf_table.bounds.components[0]; ++parall_count) {
-			x_dfc[parall_count + perp_count * vdf_table.bounds.components[0]] = Dpr[parall_count] * v_perp;
-			xy_dfc[parall_count + perp_count * vdf_table.bounds.components[0]] = Dmx[parall_count] * v_perp;
+			x_dfc[parall_count + perp_count * vdf_table.bounds.components[0]] = 1.e-4 * Dpr[parall_count] * v_perp;
+			xy_dfc[parall_count + perp_count * vdf_table.bounds.components[0]] = 1.e-4 * Dmx[parall_count] * v_perp;
 
 		}
 	}
@@ -40,8 +40,8 @@ void dfc_pivot_recalc(iki::UniformSimpleTable<float, 2u, 1u> const &vdf_table, s
 		float const Dpl_ = Dpl[parall_count], Dmx_ = Dmx[parall_count];
 		for (unsigned perp_count = 0; perp_count != vdf_table.bounds.components[1]; ++perp_count) {
 			float v_perp = vdf_table.space.axes[1].begin + vdf_table.space.axes[1].step * perp_count;
-			y_dfc[parall_count * vdf_table.bounds.components[0] + perp_count] = Dpl_ * v_perp;
-			yx_dfc[parall_count * vdf_table.bounds.components[0] + perp_count] = Dmx_ * v_perp;
+			y_dfc[parall_count * vdf_table.bounds.components[0] + perp_count] = 1.e-4 * Dpl_ * v_perp;
+			yx_dfc[parall_count * vdf_table.bounds.components[0] + perp_count] = 1.e-4 * Dmx_ * v_perp;
 		}
 	}
 }
@@ -91,14 +91,16 @@ int main() {
 		SimpleTwoDimensionalSolver<float> vdf_diffusor(vdf_table.bounds.components[0], vdf_table.bounds.components[1], rparall, rperp, vdf_vector, x_dfc_pivot, y_dfc_pivot, xy_dfc_pivot, yx_dfc_pivot);
 		GammaRecalculation<float> growthrate(vdf_table.bounds.components[1],vdf_table.bounds.components[0],vdf_table.space,dt,x_dfc_pivot,y_dfc_pivot,xy_dfc_pivot,yx_dfc_pivot,result.dispersion_derivative,result.k_betta, amplitude_spectrum);
 		growthrate.external_memory_init(vdf_diffusor.f_curr_full,vdf_diffusor.x_dfc,vdf_diffusor.y_dfc,vdf_diffusor.xy_dfc,vdf_diffusor.yx_dfc);
-		growthrate.growth_rate_update();
+		//growthrate.growth_rate_update();
 
 		
-		for (unsigned count = 0; count != 10'000; ++count) {
+		for (unsigned count = 0; count != 10000; ++count) {
 			vdf_diffusor.step();
 			cudaDeviceSynchronize();
 			//growthrate.growth_rate_update();
 		}
+
+		growthrate.growth_rate_update();
 
 		if (cudaSuccess != (cudaStatus = cudaMemcpy(vdf_vector.data(), vdf_diffusor.f_curr_full, collapsed_size(&vdf_table.bounds) * sizeof(float), cudaMemcpyDeviceToHost))) throw DeviceException(cudaStatus);
 
@@ -148,7 +150,7 @@ int main() {
 				ascii_os.precision(7); ascii_os.setf(ios::scientific, ios::floatfield);
 				ascii_os << y_dfc_table;
 			}
-		}
+		}*/
 
 		{
 			UniformSimpleTable<float, 1u, 1u> gr_table;
@@ -161,7 +163,14 @@ int main() {
 			}
 
 			if (cudaSuccess != (cudaStatus = cudaMemcpy(gr_vector.data(), growthrate.growth_rate_spectrum, collapsed_size(&gr_table.bounds) * sizeof(float), cudaMemcpyDeviceToHost))) throw DeviceException(cudaStatus);
-		}*/
+
+			{
+				ofstream ascii_os("./data/gr_result.txt");
+				ascii_os.exceptions(ios::failbit | ios::badbit);
+				ascii_os.precision(7); ascii_os.setf(ios::scientific, ios::floatfield);
+				ascii_os << gr_table;
+			}
+		}
 	}
 	catch (exception const &ex) {
 		cout << ex.what() << endl;
